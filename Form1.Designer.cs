@@ -1,4 +1,4 @@
-﻿namespace SQL_SERVER_IMPORT_EXPORT
+namespace SQL_SERVER_IMPORT_EXPORT
 {
     partial class Form1
     {
@@ -52,7 +52,11 @@
             this.ExportButton = new System.Windows.Forms.Button();
             this.ImportButton = new System.Windows.Forms.Button();
             this.ImportPanel = new System.Windows.Forms.Panel();
-            this.ImportDelimeterLastSelected = new System.Windows.Forms.Label();
+            this.label24 = new System.Windows.Forms.Label();
+            this.label23 = new System.Windows.Forms.Label();
+            this.ImportChooseFileButton = new System.Windows.Forms.Button();
+            this.InsertToExistingTableCheckBox = new System.Windows.Forms.CheckBox();
+            this.DoubleQuoted = new System.Windows.Forms.CheckBox();
             this.label10 = new System.Windows.Forms.Label();
             this.ImportToSingleTableTextBox = new System.Windows.Forms.TextBox();
             this.label12 = new System.Windows.Forms.Label();
@@ -61,11 +65,21 @@
             this.label9 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.ExportPanel = new System.Windows.Forms.Panel();
-            this.ExportDelimeterLastSelected = new System.Windows.Forms.Label();
-            this.ExportQualifierLastSelected = new System.Windows.Forms.Label();
+            this.SplitAmounNumericUpDown = new System.Windows.Forms.NumericUpDown();
+            this.label22 = new System.Windows.Forms.Label();
+            this.label21 = new System.Windows.Forms.Label();
+            this.label20 = new System.Windows.Forms.Label();
+            this.label19 = new System.Windows.Forms.Label();
+            this.IncludeHeaderInSplitFilesCheckBox = new System.Windows.Forms.CheckBox();
+            this.OrderByTextBox = new System.Windows.Forms.TextBox();
+            this.label17 = new System.Windows.Forms.Label();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.NoSplitRadioButton = new System.Windows.Forms.RadioButton();
+            this.SizeSplitRadioButton = new System.Windows.Forms.RadioButton();
+            this.RowSplitRadioButton = new System.Windows.Forms.RadioButton();
             this.label5 = new System.Windows.Forms.Label();
-            this.FixedWidthColumnLengthMethodListBox = new System.Windows.Forms.ListBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.ExportChooseFileButton = new System.Windows.Forms.Button();
             this.label14 = new System.Windows.Forms.Label();
             this.LoadSqlTables = new System.Windows.Forms.Button();
             this.TablesToExportListFromSql = new System.Windows.Forms.ListBox();
@@ -78,8 +92,14 @@
             this.label15 = new System.Windows.Forms.Label();
             this.ServerComboBox = new System.Windows.Forms.ComboBox();
             this.DatabaseComboBox = new System.Windows.Forms.ComboBox();
+            this.label11 = new System.Windows.Forms.Label();
+            this.label16 = new System.Windows.Forms.Label();
+            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.ImportPanel.SuspendLayout();
             this.ExportPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.SplitAmounNumericUpDown)).BeginInit();
+            this.panel2.SuspendLayout();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -87,7 +107,7 @@
             // 
             this.ImportPath.AutoSize = true;
             this.ImportPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ImportPath.Location = new System.Drawing.Point(15, 477);
+            this.ImportPath.Location = new System.Drawing.Point(16, 505);
             this.ImportPath.Name = "ImportPath";
             this.ImportPath.Size = new System.Drawing.Size(95, 16);
             this.ImportPath.TabIndex = 1;
@@ -115,11 +135,10 @@
             // 
             // ImportPathTextBox
             // 
-            this.ImportPathTextBox.Location = new System.Drawing.Point(9, 551);
+            this.ImportPathTextBox.Location = new System.Drawing.Point(10, 579);
             this.ImportPathTextBox.Name = "ImportPathTextBox";
             this.ImportPathTextBox.Size = new System.Drawing.Size(291, 20);
             this.ImportPathTextBox.TabIndex = 7;
-            this.ImportPathTextBox.Text = "C:\\Users\\oscar\\Desktop\\e";
             // 
             // Server
             // 
@@ -173,7 +192,7 @@
             // 
             this.ImportPathNotes.AutoSize = true;
             this.ImportPathNotes.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.ImportPathNotes.Location = new System.Drawing.Point(11, 497);
+            this.ImportPathNotes.Location = new System.Drawing.Point(12, 525);
             this.ImportPathNotes.Name = "ImportPathNotes";
             this.ImportPathNotes.Size = new System.Drawing.Size(339, 17);
             this.ImportPathNotes.TabIndex = 18;
@@ -194,17 +213,16 @@
             // 
             // ExportPathTextBox
             // 
-            this.ExportPathTextBox.Location = new System.Drawing.Point(11, 551);
+            this.ExportPathTextBox.Location = new System.Drawing.Point(8, 579);
             this.ExportPathTextBox.Name = "ExportPathTextBox";
             this.ExportPathTextBox.Size = new System.Drawing.Size(291, 20);
             this.ExportPathTextBox.TabIndex = 17;
-            this.ExportPathTextBox.Text = "C:\\Users\\oscar\\Desktop\\e";
             // 
             // ExportPath
             // 
             this.ExportPath.AutoSize = true;
             this.ExportPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ExportPath.Location = new System.Drawing.Point(8, 522);
+            this.ExportPath.Location = new System.Drawing.Point(5, 550);
             this.ExportPath.Name = "ExportPath";
             this.ExportPath.Size = new System.Drawing.Size(96, 16);
             this.ExportPath.TabIndex = 28;
@@ -214,7 +232,7 @@
             // 
             this.ExportPathNotes.AutoSize = true;
             this.ExportPathNotes.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.ExportPathNotes.Location = new System.Drawing.Point(8, 535);
+            this.ExportPathNotes.Location = new System.Drawing.Point(5, 563);
             this.ExportPathNotes.Name = "ExportPathNotes";
             this.ExportPathNotes.Size = new System.Drawing.Size(217, 17);
             this.ExportPathNotes.TabIndex = 30;
@@ -306,7 +324,7 @@
             // 
             // ExportButton
             // 
-            this.ExportButton.Location = new System.Drawing.Point(11, 577);
+            this.ExportButton.Location = new System.Drawing.Point(15, 608);
             this.ExportButton.Name = "ExportButton";
             this.ExportButton.Size = new System.Drawing.Size(175, 42);
             this.ExportButton.TabIndex = 18;
@@ -316,7 +334,7 @@
             // 
             // ImportButton
             // 
-            this.ImportButton.Location = new System.Drawing.Point(18, 577);
+            this.ImportButton.Location = new System.Drawing.Point(18, 605);
             this.ImportButton.Name = "ImportButton";
             this.ImportButton.Size = new System.Drawing.Size(175, 42);
             this.ImportButton.TabIndex = 8;
@@ -326,7 +344,11 @@
             // 
             // ImportPanel
             // 
-            this.ImportPanel.Controls.Add(this.ImportDelimeterLastSelected);
+            this.ImportPanel.Controls.Add(this.label24);
+            this.ImportPanel.Controls.Add(this.label23);
+            this.ImportPanel.Controls.Add(this.ImportChooseFileButton);
+            this.ImportPanel.Controls.Add(this.InsertToExistingTableCheckBox);
+            this.ImportPanel.Controls.Add(this.DoubleQuoted);
             this.ImportPanel.Controls.Add(this.label10);
             this.ImportPanel.Controls.Add(this.ImportToSingleTableTextBox);
             this.ImportPanel.Controls.Add(this.label12);
@@ -344,33 +366,82 @@
             this.ImportPanel.Controls.Add(this.ImportPathTextBox);
             this.ImportPanel.Location = new System.Drawing.Point(12, 35);
             this.ImportPanel.Name = "ImportPanel";
-            this.ImportPanel.Size = new System.Drawing.Size(386, 622);
+            this.ImportPanel.Size = new System.Drawing.Size(386, 650);
             this.ImportPanel.TabIndex = 50;
             // 
-            // ImportDelimeterLastSelected
+            // label24
             // 
-            this.ImportDelimeterLastSelected.AutoSize = true;
-            this.ImportDelimeterLastSelected.Location = new System.Drawing.Point(166, 120);
-            this.ImportDelimeterLastSelected.Name = "ImportDelimeterLastSelected";
-            this.ImportDelimeterLastSelected.Size = new System.Drawing.Size(47, 13);
-            this.ImportDelimeterLastSelected.TabIndex = 57;
-            this.ImportDelimeterLastSelected.Text = "COMMA";
-            this.ImportDelimeterLastSelected.Visible = false;
+            this.label24.AutoSize = true;
+            this.label24.Font = new System.Drawing.Font("MS UI Gothic", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label24.ForeColor = System.Drawing.SystemColors.AppWorkspace;
+            this.label24.Location = new System.Drawing.Point(-2, 211);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(182, 8);
+            this.label24.TabIndex = 82;
+            this.label24.Text = "_________________________________________________________________________________" +
+    "________\r\n";
+            // 
+            // label23
+            // 
+            this.label23.AutoSize = true;
+            this.label23.Font = new System.Drawing.Font("MS UI Gothic", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label23.ForeColor = System.Drawing.SystemColors.AppWorkspace;
+            this.label23.Location = new System.Drawing.Point(8, 359);
+            this.label23.Name = "label23";
+            this.label23.Size = new System.Drawing.Size(182, 8);
+            this.label23.TabIndex = 81;
+            this.label23.Text = "_________________________________________________________________________________" +
+    "________\r\n";
+            // 
+            // ImportChooseFileButton
+            // 
+            this.ImportChooseFileButton.Location = new System.Drawing.Point(306, 563);
+            this.ImportChooseFileButton.Name = "ImportChooseFileButton";
+            this.ImportChooseFileButton.Size = new System.Drawing.Size(66, 36);
+            this.ImportChooseFileButton.TabIndex = 63;
+            this.ImportChooseFileButton.Text = "Choose File";
+            this.ImportChooseFileButton.UseVisualStyleBackColor = true;
+            this.ImportChooseFileButton.Click += new System.EventHandler(this.ImportChooseFileButton_Click);
+            // 
+            // InsertToExistingTableCheckBox
+            // 
+            this.InsertToExistingTableCheckBox.AutoSize = true;
+            this.InsertToExistingTableCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.InsertToExistingTableCheckBox.Location = new System.Drawing.Point(10, 224);
+            this.InsertToExistingTableCheckBox.Name = "InsertToExistingTableCheckBox";
+            this.InsertToExistingTableCheckBox.Size = new System.Drawing.Size(170, 21);
+            this.InsertToExistingTableCheckBox.TabIndex = 62;
+            this.InsertToExistingTableCheckBox.Text = "Insert to Existing Table";
+            this.InsertToExistingTableCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // DoubleQuoted
+            // 
+            this.DoubleQuoted.AutoSize = true;
+            this.DoubleQuoted.Checked = true;
+            this.DoubleQuoted.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.DoubleQuoted.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.DoubleQuoted.Location = new System.Drawing.Point(10, 136);
+            this.DoubleQuoted.Name = "DoubleQuoted";
+            this.DoubleQuoted.Size = new System.Drawing.Size(345, 72);
+            this.DoubleQuoted.TabIndex = 61;
+            this.DoubleQuoted.Text = "Double-Quoted \r\n(If the file is quoted, please select this)\r\n(un-select when deal" +
+    "ing with files with un-escaped \r\ndouble quotes!)";
+            this.DoubleQuoted.UseVisualStyleBackColor = true;
             // 
             // label10
             // 
             this.label10.AutoSize = true;
             this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label10.Location = new System.Drawing.Point(6, 272);
+            this.label10.Location = new System.Drawing.Point(5, 266);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(345, 34);
+            this.label10.Size = new System.Drawing.Size(345, 51);
             this.label10.TabIndex = 56;
             this.label10.Text = "Enter a Table Name to Import all files to a single table\r\n(must have identical he" +
-    "aders)";
+    "aders)\r\n(or if a single file, enter a name here to re-name it)";
             // 
             // ImportToSingleTableTextBox
             // 
-            this.ImportToSingleTableTextBox.Location = new System.Drawing.Point(9, 309);
+            this.ImportToSingleTableTextBox.Location = new System.Drawing.Point(10, 320);
             this.ImportToSingleTableTextBox.Name = "ImportToSingleTableTextBox";
             this.ImportToSingleTableTextBox.Size = new System.Drawing.Size(287, 20);
             this.ImportToSingleTableTextBox.TabIndex = 5;
@@ -379,7 +450,7 @@
             // 
             this.label12.AutoSize = true;
             this.label12.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label12.Location = new System.Drawing.Point(11, 382);
+            this.label12.Location = new System.Drawing.Point(10, 406);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(134, 52);
             this.label12.TabIndex = 53;
@@ -389,7 +460,7 @@
             // 
             this.FixedWidthColumnFilePathLabel.AutoSize = true;
             this.FixedWidthColumnFilePathLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.FixedWidthColumnFilePathLabel.Location = new System.Drawing.Point(6, 348);
+            this.FixedWidthColumnFilePathLabel.Location = new System.Drawing.Point(5, 372);
             this.FixedWidthColumnFilePathLabel.Name = "FixedWidthColumnFilePathLabel";
             this.FixedWidthColumnFilePathLabel.Size = new System.Drawing.Size(309, 34);
             this.FixedWidthColumnFilePathLabel.TabIndex = 52;
@@ -397,7 +468,7 @@
             // 
             // FixedWidthColumnFilePathTextBox
             // 
-            this.FixedWidthColumnFilePathTextBox.Location = new System.Drawing.Point(9, 437);
+            this.FixedWidthColumnFilePathTextBox.Location = new System.Drawing.Point(8, 461);
             this.FixedWidthColumnFilePathTextBox.Name = "FixedWidthColumnFilePathTextBox";
             this.FixedWidthColumnFilePathTextBox.Size = new System.Drawing.Size(291, 20);
             this.FixedWidthColumnFilePathTextBox.TabIndex = 6;
@@ -406,7 +477,7 @@
             // 
             this.label9.AutoSize = true;
             this.label9.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label9.Location = new System.Drawing.Point(11, 514);
+            this.label9.Location = new System.Drawing.Point(12, 542);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(360, 34);
             this.label9.TabIndex = 50;
@@ -417,7 +488,7 @@
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(4, 4);
+            this.label7.Location = new System.Drawing.Point(0, 8);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(68, 24);
             this.label7.TabIndex = 49;
@@ -425,14 +496,21 @@
             // 
             // ExportPanel
             // 
-            this.ExportPanel.Controls.Add(this.ExportDelimeterLastSelected);
-            this.ExportPanel.Controls.Add(this.ExportQualifierLastSelected);
+            this.ExportPanel.Controls.Add(this.TablesToExportListFromSql);
+            this.ExportPanel.Controls.Add(this.SplitAmounNumericUpDown);
+            this.ExportPanel.Controls.Add(this.label22);
+            this.ExportPanel.Controls.Add(this.label21);
+            this.ExportPanel.Controls.Add(this.label20);
+            this.ExportPanel.Controls.Add(this.label19);
+            this.ExportPanel.Controls.Add(this.IncludeHeaderInSplitFilesCheckBox);
+            this.ExportPanel.Controls.Add(this.OrderByTextBox);
+            this.ExportPanel.Controls.Add(this.label17);
+            this.ExportPanel.Controls.Add(this.panel2);
             this.ExportPanel.Controls.Add(this.label5);
-            this.ExportPanel.Controls.Add(this.FixedWidthColumnLengthMethodListBox);
             this.ExportPanel.Controls.Add(this.label1);
+            this.ExportPanel.Controls.Add(this.ExportChooseFileButton);
             this.ExportPanel.Controls.Add(this.label14);
             this.ExportPanel.Controls.Add(this.LoadSqlTables);
-            this.ExportPanel.Controls.Add(this.TablesToExportListFromSql);
             this.ExportPanel.Controls.Add(this.label8);
             this.ExportPanel.Controls.Add(this.ExportButton);
             this.ExportPanel.Controls.Add(this.TablesToExportCommaList);
@@ -450,65 +528,170 @@
             this.ExportPanel.Controls.Add(this.panel1);
             this.ExportPanel.Location = new System.Drawing.Point(404, 35);
             this.ExportPanel.Name = "ExportPanel";
-            this.ExportPanel.Size = new System.Drawing.Size(472, 622);
+            this.ExportPanel.Size = new System.Drawing.Size(488, 650);
             this.ExportPanel.TabIndex = 51;
             // 
-            // ExportDelimeterLastSelected
+            // SplitAmounNumericUpDown
             // 
-            this.ExportDelimeterLastSelected.AutoSize = true;
-            this.ExportDelimeterLastSelected.Location = new System.Drawing.Point(157, 369);
-            this.ExportDelimeterLastSelected.Name = "ExportDelimeterLastSelected";
-            this.ExportDelimeterLastSelected.Size = new System.Drawing.Size(47, 13);
-            this.ExportDelimeterLastSelected.TabIndex = 60;
-            this.ExportDelimeterLastSelected.Text = "COMMA";
-            this.ExportDelimeterLastSelected.Visible = false;
+            this.SplitAmounNumericUpDown.Location = new System.Drawing.Point(76, 423);
+            this.SplitAmounNumericUpDown.Maximum = new decimal(new int[] {
+            1000000,
+            0,
+            0,
+            0});
+            this.SplitAmounNumericUpDown.Name = "SplitAmounNumericUpDown";
+            this.SplitAmounNumericUpDown.Size = new System.Drawing.Size(177, 20);
+            this.SplitAmounNumericUpDown.TabIndex = 65;
             // 
-            // ExportQualifierLastSelected
+            // label22
             // 
-            this.ExportQualifierLastSelected.AutoSize = true;
-            this.ExportQualifierLastSelected.Location = new System.Drawing.Point(296, 369);
-            this.ExportQualifierLastSelected.Name = "ExportQualifierLastSelected";
-            this.ExportQualifierLastSelected.Size = new System.Drawing.Size(12, 13);
-            this.ExportQualifierLastSelected.TabIndex = 58;
-            this.ExportQualifierLastSelected.Text = "\"";
-            this.ExportQualifierLastSelected.Visible = false;
+            this.label22.AutoSize = true;
+            this.label22.Font = new System.Drawing.Font("MS UI Gothic", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label22.ForeColor = System.Drawing.SystemColors.AppWorkspace;
+            this.label22.Location = new System.Drawing.Point(7, 262);
+            this.label22.Name = "label22";
+            this.label22.Size = new System.Drawing.Size(182, 8);
+            this.label22.TabIndex = 80;
+            this.label22.Text = "_________________________________________________________________________________" +
+    "________\r\n";
+            // 
+            // label21
+            // 
+            this.label21.AutoSize = true;
+            this.label21.Font = new System.Drawing.Font("MS UI Gothic", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label21.ForeColor = System.Drawing.SystemColors.AppWorkspace;
+            this.label21.Location = new System.Drawing.Point(0, 390);
+            this.label21.Name = "label21";
+            this.label21.Size = new System.Drawing.Size(182, 8);
+            this.label21.TabIndex = 79;
+            this.label21.Text = "_________________________________________________________________________________" +
+    "________\r\n";
+            // 
+            // label20
+            // 
+            this.label20.AutoSize = true;
+            this.label20.Font = new System.Drawing.Font("MS UI Gothic", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label20.ForeColor = System.Drawing.SystemColors.AppWorkspace;
+            this.label20.Location = new System.Drawing.Point(3, 543);
+            this.label20.Name = "label20";
+            this.label20.Size = new System.Drawing.Size(182, 8);
+            this.label20.TabIndex = 78;
+            this.label20.Text = "_________________________________________________________________________________" +
+    "________\r\n";
+            // 
+            // label19
+            // 
+            this.label19.AutoSize = true;
+            this.label19.Font = new System.Drawing.Font("MS UI Gothic", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label19.ForeColor = System.Drawing.SystemColors.AppWorkspace;
+            this.label19.Location = new System.Drawing.Point(-11, 453);
+            this.label19.Name = "label19";
+            this.label19.Size = new System.Drawing.Size(182, 8);
+            this.label19.TabIndex = 58;
+            this.label19.Text = "_________________________________________________________________________________" +
+    "________\r\n";
+            // 
+            // IncludeHeaderInSplitFilesCheckBox
+            // 
+            this.IncludeHeaderInSplitFilesCheckBox.AutoSize = true;
+            this.IncludeHeaderInSplitFilesCheckBox.Checked = true;
+            this.IncludeHeaderInSplitFilesCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.IncludeHeaderInSplitFilesCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.IncludeHeaderInSplitFilesCheckBox.Location = new System.Drawing.Point(269, 424);
+            this.IncludeHeaderInSplitFilesCheckBox.Name = "IncludeHeaderInSplitFilesCheckBox";
+            this.IncludeHeaderInSplitFilesCheckBox.Size = new System.Drawing.Size(209, 21);
+            this.IncludeHeaderInSplitFilesCheckBox.TabIndex = 75;
+            this.IncludeHeaderInSplitFilesCheckBox.Text = "Include Headers In Split Files";
+            this.IncludeHeaderInSplitFilesCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // OrderByTextBox
+            // 
+            this.OrderByTextBox.Location = new System.Drawing.Point(84, 464);
+            this.OrderByTextBox.Name = "OrderByTextBox";
+            this.OrderByTextBox.Size = new System.Drawing.Size(394, 20);
+            this.OrderByTextBox.TabIndex = 74;
+            // 
+            // label17
+            // 
+            this.label17.AutoSize = true;
+            this.label17.Location = new System.Drawing.Point(5, 471);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(350, 52);
+            this.label17.TabIndex = 73;
+            this.label17.Text = "Order by:\r\nWrite it out just like in SQL (example: ZIP ASC, NEWID())\r\nMake sure t" +
+    "he columns you specify exist in all the tables you\'re exporting!\r\nThis may be bu" +
+    "ggy just like it is in SSMS.";
+            // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.NoSplitRadioButton);
+            this.panel2.Controls.Add(this.SizeSplitRadioButton);
+            this.panel2.Controls.Add(this.RowSplitRadioButton);
+            this.panel2.Location = new System.Drawing.Point(77, 394);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(295, 24);
+            this.panel2.TabIndex = 72;
+            // 
+            // NoSplitRadioButton
+            // 
+            this.NoSplitRadioButton.AutoSize = true;
+            this.NoSplitRadioButton.Location = new System.Drawing.Point(7, 7);
+            this.NoSplitRadioButton.Name = "NoSplitRadioButton";
+            this.NoSplitRadioButton.Size = new System.Drawing.Size(62, 17);
+            this.NoSplitRadioButton.TabIndex = 72;
+            this.NoSplitRadioButton.TabStop = true;
+            this.NoSplitRadioButton.Text = "No Split";
+            this.NoSplitRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // SizeSplitRadioButton
+            // 
+            this.SizeSplitRadioButton.AutoSize = true;
+            this.SizeSplitRadioButton.Location = new System.Drawing.Point(137, 7);
+            this.SizeSplitRadioButton.Name = "SizeSplitRadioButton";
+            this.SizeSplitRadioButton.Size = new System.Drawing.Size(106, 17);
+            this.SizeSplitRadioButton.TabIndex = 71;
+            this.SizeSplitRadioButton.TabStop = true;
+            this.SizeSplitRadioButton.Text = "Size (Megabytes)";
+            this.SizeSplitRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // RowSplitRadioButton
+            // 
+            this.RowSplitRadioButton.AutoSize = true;
+            this.RowSplitRadioButton.Location = new System.Drawing.Point(81, 7);
+            this.RowSplitRadioButton.Name = "RowSplitRadioButton";
+            this.RowSplitRadioButton.Size = new System.Drawing.Size(52, 17);
+            this.RowSplitRadioButton.TabIndex = 70;
+            this.RowSplitRadioButton.TabStop = true;
+            this.RowSplitRadioButton.Text = "Rows";
+            this.RowSplitRadioButton.UseVisualStyleBackColor = true;
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(190, 467);
+            this.label5.Location = new System.Drawing.Point(5, 427);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(263, 52);
-            this.label5.TabIndex = 58;
-            this.label5.Text = "MAX LEN = Maximum Length of Values in Column\r\nCOL_LENGTH = Length of Column set i" +
-    "n it\'s Definition\r\n\r\n(unfinished - COL_LENGTH is inconsistent)";
-            this.label5.Visible = false;
-            // 
-            // FixedWidthColumnLengthMethodListBox
-            // 
-            this.FixedWidthColumnLengthMethodListBox.Enabled = false;
-            this.FixedWidthColumnLengthMethodListBox.FormattingEnabled = true;
-            this.FixedWidthColumnLengthMethodListBox.Items.AddRange(new object[] {
-            "MAX LEN",
-            "COL_LENGTH"});
-            this.FixedWidthColumnLengthMethodListBox.Location = new System.Drawing.Point(11, 464);
-            this.FixedWidthColumnLengthMethodListBox.Name = "FixedWidthColumnLengthMethodListBox";
-            this.FixedWidthColumnLengthMethodListBox.Size = new System.Drawing.Size(175, 43);
-            this.FixedWidthColumnLengthMethodListBox.TabIndex = 59;
-            this.FixedWidthColumnLengthMethodListBox.Visible = false;
+            this.label5.Size = new System.Drawing.Size(113, 26);
+            this.label5.TabIndex = 69;
+            this.label5.Text = "Split Amount:\r\nmust be whole-number";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label1.Location = new System.Drawing.Point(8, 426);
+            this.label1.Location = new System.Drawing.Point(3, 403);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(306, 34);
-            this.label1.TabIndex = 58;
-            this.label1.Text = "How to Define Fixed Width Column Lengths?\r\n(^required with FIXED WIDTH Export Del" +
-    "imeter)";
-            this.label1.Visible = false;
+            this.label1.Size = new System.Drawing.Size(69, 13);
+            this.label1.TabIndex = 66;
+            this.label1.Text = "Split Files By:";
+            // 
+            // ExportChooseFileButton
+            // 
+            this.ExportChooseFileButton.Location = new System.Drawing.Point(306, 563);
+            this.ExportChooseFileButton.Name = "ExportChooseFileButton";
+            this.ExportChooseFileButton.Size = new System.Drawing.Size(66, 36);
+            this.ExportChooseFileButton.TabIndex = 64;
+            this.ExportChooseFileButton.Text = "Choose Folder";
+            this.ExportChooseFileButton.UseVisualStyleBackColor = true;
+            this.ExportChooseFileButton.Click += new System.EventHandler(this.ExportChooseFileButton_Click);
             // 
             // label14
             // 
@@ -522,7 +705,7 @@
             // 
             // LoadSqlTables
             // 
-            this.LoadSqlTables.Location = new System.Drawing.Point(151, 117);
+            this.LoadSqlTables.Location = new System.Drawing.Point(149, 113);
             this.LoadSqlTables.Name = "LoadSqlTables";
             this.LoadSqlTables.Size = new System.Drawing.Size(152, 19);
             this.LoadSqlTables.TabIndex = 53;
@@ -533,17 +716,17 @@
             // TablesToExportListFromSql
             // 
             this.TablesToExportListFromSql.FormattingEnabled = true;
-            this.TablesToExportListFromSql.Location = new System.Drawing.Point(15, 142);
+            this.TablesToExportListFromSql.Location = new System.Drawing.Point(14, 133);
             this.TablesToExportListFromSql.Name = "TablesToExportListFromSql";
             this.TablesToExportListFromSql.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.TablesToExportListFromSql.Size = new System.Drawing.Size(454, 121);
+            this.TablesToExportListFromSql.Size = new System.Drawing.Size(471, 134);
             this.TablesToExportListFromSql.TabIndex = 11;
             // 
             // label8
             // 
             this.label8.AutoSize = true;
             this.label8.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label8.Location = new System.Drawing.Point(2, 4);
+            this.label8.Location = new System.Drawing.Point(0, 8);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(71, 24);
             this.label8.TabIndex = 50;
@@ -595,20 +778,20 @@
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label13.Location = new System.Drawing.Point(615, 7);
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(70, 17);
+            this.label13.Size = new System.Drawing.Size(75, 16);
             this.label13.TabIndex = 52;
             this.label13.Text = "* required";
             // 
             // label15
             // 
             this.label15.AutoSize = true;
-            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label15.Location = new System.Drawing.Point(710, 7);
             this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(154, 17);
+            this.label15.Size = new System.Drawing.Size(169, 16);
             this.label15.TabIndex = 53;
             this.label15.Text = "^ conditionally required";
             // 
@@ -642,11 +825,41 @@
             this.DatabaseComboBox.TabIndex = 55;
             this.DatabaseComboBox.Text = "TEMP_OK";
             // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Font = new System.Drawing.Font("MS UI Gothic", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label11.ForeColor = System.Drawing.SystemColors.AppWorkspace;
+            this.label11.Location = new System.Drawing.Point(391, 45);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(16, 624);
+            this.label11.TabIndex = 56;
+            this.label11.Text = "|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n|\r\n\r\n";
+            // 
+            // label16
+            // 
+            this.label16.AutoSize = true;
+            this.label16.Font = new System.Drawing.Font("MS UI Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label16.ForeColor = System.Drawing.SystemColors.AppWorkspace;
+            this.label16.Location = new System.Drawing.Point(24, 28);
+            this.label16.Name = "label16";
+            this.label16.Size = new System.Drawing.Size(745, 12);
+            this.label16.TabIndex = 57;
+            this.label16.Text = "_________________________________________________________________________________" +
+    "________________________________________________________________________________" +
+    "________________________\r\n";
+            // 
+            // openFileDialog1
+            // 
+            this.openFileDialog1.FileName = "openFileDialog1";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(882, 660);
+            this.ClientSize = new System.Drawing.Size(896, 687);
+            this.Controls.Add(this.label16);
+            this.Controls.Add(this.label11);
             this.Controls.Add(this.DatabaseComboBox);
             this.Controls.Add(this.ServerComboBox);
             this.Controls.Add(this.label15);
@@ -662,6 +875,9 @@
             this.ImportPanel.PerformLayout();
             this.ExportPanel.ResumeLayout(false);
             this.ExportPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.SplitAmounNumericUpDown)).EndInit();
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.ResumeLayout(false);
@@ -714,12 +930,30 @@
         private System.Windows.Forms.Label label15;
         private System.Windows.Forms.ComboBox ServerComboBox;
         private System.Windows.Forms.ComboBox DatabaseComboBox;
-        private System.Windows.Forms.Label ImportDelimeterLastSelected;
+        private System.Windows.Forms.CheckBox DoubleQuoted;
+        private System.Windows.Forms.CheckBox InsertToExistingTableCheckBox;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.Label label16;
+        private System.Windows.Forms.Button ImportChooseFileButton;
+        private System.Windows.Forms.Button ExportChooseFileButton;
+        private System.Windows.Forms.OpenFileDialog openFileDialog1;
+        private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.ListBox FixedWidthColumnLengthMethodListBox;
+        private System.Windows.Forms.NumericUpDown SplitAmounNumericUpDown;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.Label ExportQualifierLastSelected;
-        private System.Windows.Forms.Label ExportDelimeterLastSelected;
+        private System.Windows.Forms.Label label17;
+        private System.Windows.Forms.RadioButton RowSplitRadioButton;
+        private System.Windows.Forms.RadioButton SizeSplitRadioButton;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.TextBox OrderByTextBox;
+        private System.Windows.Forms.RadioButton NoSplitRadioButton;
+        private System.Windows.Forms.CheckBox IncludeHeaderInSplitFilesCheckBox;
+        private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.Label label23;
+        private System.Windows.Forms.Label label22;
+        private System.Windows.Forms.Label label21;
+        private System.Windows.Forms.Label label20;
     }
 }
 
