@@ -10,6 +10,8 @@
  * private void ExportButton_Click(object sender, EventArgs e)
  * 
  * OTHER
+ * private List<string> GetListOfUserSelectedTables()
+ * 
  * private void LoadSqlTables_Click(object sender, EventArgs e)
  * private void ExtensionListBoxImport_SelectedIndexChanged(object sender, EventArgs e)
  * private void ImportDelimeterListBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -37,6 +39,7 @@ using System.IO; //for Directory
 using System.Linq;
 using System.Windows.Forms;
 using System.Security;
+using System.Diagnostics;
 
 namespace SQL_SERVER_IMPORT_EXPORT
 {
@@ -51,21 +54,27 @@ namespace SQL_SERVER_IMPORT_EXPORT
             InitializeComponent();
 
             //default values
-            ExtensionListBoxImport.SetSelected(0, true);
-            ImportDelimeterListBox.SetSelected(0, true);
+            ExtensionListBoxImport.SetSelected(0, true); //csv
+            ImportDelimeterListBox.SetSelected(0, true); //COMMA
 
-            OutputTypeListBox.SetSelected(0, true);
-            ExportDelimeterListBox.SetSelected(0, true);
-            ExportQualifierListBox.SetSelected(0, true);
+            OutputTypeListBox.SetSelected(0, true); //csv
+            ExportDelimeterListBox.SetSelected(0, true); //COMMA
+            ExportQualifierListBox.SetSelected(0, true); //"
 
-            TablePickerRadioButton.Select();
-            NoSplitRadioButton.Select();
+            TablePickerRadioButton.Select(); //Select tables to export from SQL table picker
+            NoSplitRadioButton.Select(); //Select option to not split files on export
 
-            SplitAmounNumericUpDown.Maximum = int.MaxValue - 1;
+            SplitAmounNumericUpDown.Maximum = int.MaxValue - 1; //setting maximum value for split amount
 
+            //cant get current path of shortcut that's used to run this!
             string CurrentPath = System.IO.Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath);
-            ImportPathTextBox.Text = CurrentPath;
-            ExportPathTextBox.Text = CurrentPath;
+            //set export/import paths to the path where the application is located
+            //this is useless unless we can find the location of the shortcut that started the application
+            //ImportPathTextBox.Text = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location); ;
+            //ExportPathTextBox.Text = System.IO.Directory.GetCurrentDirectory();//Environment.CurrentDirectory;
+            //SelectTextBox.Text = System.AppDomain.CurrentDomain.BaseDirectory;// System.IO.Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+            //GroupByTextBox.Text = Application.UserAppDataPath;//Application.StartupPath;
+            
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -92,12 +101,12 @@ namespace SQL_SERVER_IMPORT_EXPORT
          *       creates SQL table
          *   
          *   for each row:
-         *     reads each row into DataTable
          *     
-         *     if BatchLimit is reached:
-         *       inserts DataTable into SQL table
-         *       
-         *   imports any remaining data not in previous batches into SQL table
+         *     PLACED IN HELPER FUNCTION:
+         *       reads each row into DataTable
+         *       if BatchLimit is reached:
+         *         inserts DataTable into SQL table
+         *       imports any remaining data not in previous batches into SQL table
          * 
          */
         //------------------------------------------------------------------------------------
@@ -141,6 +150,16 @@ namespace SQL_SERVER_IMPORT_EXPORT
             bool ImportToExistingTable = InsertToExistingTableCheckBox.Checked;
 
             string FixedWidthColumnFilePath = FixedWidthColumnFilePathTextBox.Text;
+            string ColumnTypeFilePath = ColumnTypeFilePathTextBox.Text;
+            bool ColumnTypeVarcharDefault = ColumnTypeVarcharDefaultRadioButton.Checked;
+            bool ColumnTypeUseFile = ColumnTypeUseFileRadioButton.Checked;
+            string ColumnTypeMethod = "DEFAULT VARCHAR";
+            if (ColumnTypeUseFile)
+            {
+                ColumnTypeMethod = "FILE PATH";
+            }
+
+            bool FasterImport = FasterImportCheckBox.Checked;
 
             string ImportPath = ImportPathTextBox.Text;
 
@@ -159,7 +178,9 @@ namespace SQL_SERVER_IMPORT_EXPORT
             DataTable BaseDtTable = new DataTable();
             List<DataTable> BaseDtTables = new List<DataTable>();
 
-            //for each file to import
+            /***************************************
+             * FOR EACH FILE TO IMPORT
+            ***************************************/
             for (int f = 0; f < FilesToImport.Count; f++)
             {
                 string FilePath = FilesToImport[f];
@@ -199,12 +220,12 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     {
                         if (Extension == "xls*")
                         {
-                            Helpers.CreateTablesInSqlVarchar(TableNames, Server, Database, BaseDtTables, ActualDelimeter);
+                            Helpers.CreateTablesInSqlVarchar(TableNames, Server, Database, BaseDtTables, ActualDelimeter, ColumnTypeMethod, ColumnTypeFilePath);
                             TablesCreated += BaseDtTables.Count;
                         }
                         else
                         {
-                            Helpers.CreateTableInSqlVarchar(TableName, Server, Database, BaseDtTable, ActualDelimeter);
+                            Helpers.CreateTableInSqlVarchar(TableName, Server, Database, BaseDtTable, ActualDelimeter, ColumnTypeMethod, ColumnTypeFilePath);
                             TablesCreated++;
                         }
                     }
@@ -215,12 +236,28 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 ***************************************/
                 if (Extension == "xls*")
                 {
-                    Helpers.ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTables(FilePath, TableNames, Server, Database, BaseDtTables, BatchLimit, ActualDelimeter);
+                    if (FasterImport == true)
+                    {
+                        //faster but more error prone to irregular characters and field lengths over 255
+                        Helpers.ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTablesFast(FilePath, TableNames, Server, Database, BaseDtTables, BatchLimit, ActualDelimeter);
+                    }
+                    else if (FasterImport == false)
+                    {
+                        Helpers.ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTables(FilePath, TableNames, Server, Database, BaseDtTables, BatchLimit, ActualDelimeter);
+                    }
                     FilesImported += BaseDtTables.Count;
                 }
                 else
                 {
-                    Helpers.ReadFileIntoDataTableWithRowsAndInsertIntoSqlTable(FilePath, TableName, Server, Database, BaseDtTable, BatchLimit, ActualDelimeter, IsDoubleQuoted);
+                    if(FasterImport == true)
+                    {
+                        //faster but more error prone to irregular characters and field lengths over 255
+                        Helpers.ReadFileIntoDataTableWithRowsAndInsertIntoSqlTableFast(FilePath, TableName, Server, Database, BaseDtTable, BatchLimit, ActualDelimeter, IsDoubleQuoted);
+                    }
+                    else if (FasterImport == false)
+                    {
+                        Helpers.ReadFileIntoDataTableWithRowsAndInsertIntoSqlTable(FilePath, TableName, Server, Database, BaseDtTable, BatchLimit, ActualDelimeter, IsDoubleQuoted);
+                    }
                     FilesImported++;
                 }
 
@@ -300,22 +337,39 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 ExportQualifier = "";
             }
 
+            bool QualifyAll = QualifyAllRadioButton.Checked;
+            bool QualifyIfDelimeter = QualifyIfDelimeterRadioButton.Checked;
+            bool QualifyEveryField = false;
+            if(QualifyAll)
+            {
+                QualifyEveryField = true;
+            }
+
+            bool RemoveQualInVal = RemoveQualInValCheckBox.Checked;
+
             bool IncludeHeaders = IncludeHeadersCheckBox.Checked;
             //string FixedWidthColumnLengthMethod = FixedWidthColumnLengthMethodListBox.Text;
 
             int SizeLimit = Convert.ToInt32(SplitAmounNumericUpDown.Value);
+            //decimal SizeLimit = SplitAmounNumericUpDown.Value;
             string SizeLimitType = "";
             bool IncludeHeaderInSplitFiles = IncludeHeaderInSplitFilesCheckBox.Checked;
             bool NoSplitRadioButtonChecked = NoSplitRadioButton.Checked;
             bool RowSplitRadioButtonChecked = RowSplitRadioButton.Checked;
             bool SizeSplitRadioButtonChecked = SizeSplitRadioButton.Checked;
-            if(SizeSplitRadioButtonChecked)
+            bool SizeSplit1024RadioButtonChecked = SizeSplit1024RadioButton.Checked;
+            if (SizeSplitRadioButtonChecked)
             {
                 SizeLimitType = "SIZE";
+            }
+            else if(SizeSplit1024RadioButtonChecked)
+            {
+                SizeLimitType = "SIZE1024";
             }
             else if(RowSplitRadioButtonChecked)
             {
                 SizeLimitType = "ROW";
+                //SizeLimit = Math.Floor(SizeLimit); //round down
             }
             else
             {
@@ -323,7 +377,11 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 SizeLimit = 0;
             }
 
-            string OrderBy = OrderByTextBox.Text;
+            string SelectText = SelectTextBox.Text;
+            string FromText = FromTextBox.Text;
+            string GroupByText = GroupByTextBox.Text;
+            string OrderByText = OrderByTextBox.Text;
+            string WhereText = WhereTextBox.Text;
 
             string ExportPath = ExportPathTextBox.Text; //must be a folder
 
@@ -368,6 +426,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 TablesFromSqlDb = TablesToExportListFromSqlList;
             }
             TablesExported = TablesFromSqlDb.Count;
+            Console.WriteLine("");
 
             /***************************************
              * EXPORT TABLE FROM SQL SERVER
@@ -377,7 +436,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 string TableName = TablesFromSqlDb[t];
                 Console.WriteLine("Table " + (t + 1).ToString() + ": " + TableName);
-                int FilesCreated = Helpers.ExportTableFromSqlToFile(Server, Database, TableName, ExportPath, Extension, ActualDelimeter, ExportQualifier, IncludeHeaders, "MAX LEN", SizeLimit, SizeLimitType, IncludeHeaderInSplitFiles, OrderBy);
+                int FilesCreated = Helpers.ExportTableFromSqlToFile(Server, Database, TableName, ExportPath, Extension, ActualDelimeter, ExportQualifier, QualifyEveryField, RemoveQualInVal, IncludeHeaders, "MAX LEN", SizeLimit, SizeLimitType, IncludeHeaderInSplitFiles, SelectText, FromText, WhereText, GroupByText, OrderByText);
                 FilesExported  += FilesCreated;
                 Console.WriteLine("");
             }
@@ -389,6 +448,46 @@ namespace SQL_SERVER_IMPORT_EXPORT
 
 
 
+        //------------------------------------------------------------------------------------
+        // OTHER
+        //------------------------------------------------------------------------------------
+        private List<string> GetListOfUserSelectedTables()
+        {
+            List<string> UserSelectedTables = new List<string>();
+            Helpers Helpers = new Helpers();
+
+            string Server = ServerComboBox.Text;
+            string Database = DatabaseComboBox.Text;
+            bool TableSearchMethodIsCommaList = CommaSeperatedListTableSearchRadioButton.Checked;
+            bool TableSearchMethodIsRegexPattern = RegexPatternTableSearchRadioButton.Checked;
+            bool TableSearchMethodIsTablePicker = TablePickerRadioButton.Checked;
+
+            string TablesToExportCommaListText = TablesToExportCommaList.Text;
+            List<string> TablesToExportCommaStrList = TablesToExportCommaListText.Split(',').ToList<string>();
+            string TablesToExportRegexText = TablesToExportRegex.Text;
+            List<string> TablesToExportListFromSqlList = TablesToExportListFromSql.SelectedItems.Cast<string>().ToList();
+
+            if (TableSearchMethodIsCommaList)
+            {
+                //User types out comma-seperated list, which is checked against tables that exist in SQL
+                //Only the table names that match are returned
+                UserSelectedTables = Helpers.GetListofTablesFromSqlDb(Server, Database, TablesToExportCommaStrList);
+            }
+            else if (TableSearchMethodIsRegexPattern)
+            {
+                //User types out a regex pattern, which is checked against tables that exist in SQL
+                //Only the table names that match are returned
+                UserSelectedTables = Helpers.GetListofTablesFromSqlDb(Server, Database, TablesToExportRegexText);
+            }
+            else if (TableSearchMethodIsTablePicker)
+            {
+                //User picks from a list of tables that exist in SQLs
+                //We move forward with exactly the user input, because it definitely already exists in SQL
+                UserSelectedTables = TablesToExportListFromSqlList;
+            }
+
+            return UserSelectedTables;
+        }
 
         //------------------------------------------------------------------------------------
         // FORM EVENT FUNCTIONS
@@ -411,7 +510,32 @@ namespace SQL_SERVER_IMPORT_EXPORT
         }
 
 
+        private void ListColumnsForSelectedTablesButton_Click(object sender, EventArgs e)
+        {
+            Console.WriteLine("COLUMNS FOR SELECTED TABLES");
+            Helpers Helpers = new Helpers();
 
+            string Server = ServerComboBox.Text;
+            string Database = DatabaseComboBox.Text;
+
+            List<string> UserSelectedTables = GetListOfUserSelectedTables();
+
+            //for every table selected
+            for (int t = 0; t < UserSelectedTables.Count; t++)
+            {
+                string Table = UserSelectedTables[t];
+                //get columns
+                List<string> ColumnNames = Helpers.GetListOfColumnsForTable(Server, Database, Table);
+
+                Console.WriteLine(ColumnNames.Count + " columns");
+
+                //list them in output window
+                for (int c = 0; c < ColumnNames.Count; c++)
+                {
+                    Console.WriteLine("[" + ColumnNames[c] + "]");
+                }
+            }
+        }
 
         //makes changes to the form
         //so the user knows what fields are required, options that are not allowed, etc...
@@ -531,7 +655,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 ImportDelimeterListBox.Enabled = true;
                 ImportDelimeterListBox.SelectedItem = "COMMA";
-                ImportDelimeterListBox.Enabled = false;
+                //ImportDelimeterListBox.Enabled = false;
             }
             else
             {
@@ -566,31 +690,44 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 ExportQualifierListBox.ClearSelected();
                 ExportDelimeterListBox.ClearSelected();
                 ExportDelimeterListBox.Enabled = false;
-                if (ExportQualifierListBox.SelectedItem != null)
-                {
-                    string ExportQualifierCurrentlySelected = ExportQualifierListBox.SelectedItem.ToString();
-                }
+                ExportQualifierListBox.SetSelected(2, true);
                 ExportQualifierListBox.Enabled = false;
+                QualifyAllRadioButton.Enabled = false;
+                QualifyIfDelimeterRadioButton.Enabled = false;
+                RemoveQualInValCheckBox.Enabled = false;
 
                 NoSplitRadioButton.Checked = true;
                 NoSplitRadioButton.Enabled = false;
                 RowSplitRadioButton.Enabled = false;
                 SizeSplitRadioButton.Enabled = false;
+                SizeSplit1024RadioButton.Enabled = false;
                 SplitAmounNumericUpDown.Enabled = false;
                 IncludeHeaderInSplitFilesCheckBox.Enabled = false;
             }
             else if (ValueSelected == "csv")
             {
                 ExportDelimeterListBox.SelectedItem = "COMMA";
-                ExportDelimeterListBox.Enabled = false;
+                ExportDelimeterListBox.Enabled = true;
                 ExportQualifierListBox.SelectedItem = "\"";
                 ExportQualifierListBox.Enabled = true;
+                QualifyAllRadioButton.Enabled = true;
+                QualifyIfDelimeterRadioButton.Enabled = true;
+                RemoveQualInValCheckBox.Enabled = true;
 
                 NoSplitRadioButton.Enabled = true;
                 RowSplitRadioButton.Enabled = true;
                 SizeSplitRadioButton.Enabled = true;
+                SizeSplit1024RadioButton.Enabled = true;
                 SplitAmounNumericUpDown.Enabled = true;
-                IncludeHeaderInSplitFilesCheckBox.Enabled = true;
+
+                if (ExportDelimeterListBox.SelectedItem.ToString() != "FIXED WIDTH")
+                {
+                    IncludeHeaderInSplitFilesCheckBox.Enabled = true;
+                }
+                else if (ExportDelimeterListBox.SelectedItem.ToString() != "FIXED WIDTH")
+                {
+                    IncludeHeaderInSplitFilesCheckBox.Enabled = false;
+                }
             }
             else
             {
@@ -598,8 +735,8 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 NoSplitRadioButton.Enabled = true;
                 RowSplitRadioButton.Enabled = true;
                 SizeSplitRadioButton.Enabled = true;
+                SizeSplit1024RadioButton.Enabled = true;
                 SplitAmounNumericUpDown.Enabled = true;
-                IncludeHeaderInSplitFilesCheckBox.Enabled = true;
                 if (ExportDelimeterListBox.SelectedItem == null)
                 {
                     ExportDelimeterListBox.SelectedItem = "COMMA";
@@ -607,6 +744,14 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 if (ExportQualifierListBox.SelectedItem == null)
                 {
                     ExportQualifierListBox.SelectedItem = "\"";
+                }
+                if (ExportDelimeterListBox.SelectedItem.ToString() != "FIXED WIDTH")
+                {
+                    IncludeHeaderInSplitFilesCheckBox.Enabled = true;
+                }
+                else if (ExportDelimeterListBox.SelectedItem.ToString() == "FIXED WIDTH")
+                {
+                    IncludeHeaderInSplitFilesCheckBox.Enabled = false;
                 }
             }
         }
@@ -620,16 +765,33 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 {
                     ExportQualifierListBox.SetSelected(2, true);
                     ExportQualifierListBox.Enabled = false;
+                    QualifyAllRadioButton.Enabled = false;
+                    QualifyIfDelimeterRadioButton.Enabled = false;
+                    QualifyIfDelimeterRadioButton.Enabled = false;
+                    RemoveQualInValCheckBox.Enabled = false;
                 }
                 else if (ValueSelected == "csv")
                 {
                     ExportDelimeterListBox.Enabled = true;
                     ExportDelimeterListBox.SelectedItem = "COMMA";
-                    ExportDelimeterListBox.Enabled = false;
+                    ExportDelimeterListBox.Enabled = true;
+                    //if ((ExportDelimeterListBox.SelectedItem.ToString() != null && ExportDelimeterListBox.SelectedItem.ToString() != "xslx")
+                    //    && (ExportQualifierListBox.SelectedItem.ToString() != null && ExportQualifierListBox.SelectedItem.ToString() != "FIXED WIDTH"))
+                    //{
+                        IncludeHeaderInSplitFilesCheckBox.Enabled = true;
+                   // }
                 }
                 else
                 {
+                    //if ((ExportDelimeterListBox.SelectedItem.ToString() != null && ExportDelimeterListBox.SelectedItem.ToString() != "xslx")
+                    //    && (ExportQualifierListBox.SelectedItem.ToString() != null && ExportQualifierListBox.SelectedItem.ToString() != "FIXED WIDTH"))
+                    //{
+                        IncludeHeaderInSplitFilesCheckBox.Enabled = true;
+                    //}
                     ExportQualifierListBox.Enabled = true;
+                    QualifyAllRadioButton.Enabled = true;
+                    QualifyIfDelimeterRadioButton.Enabled = true;
+                    RemoveQualInValCheckBox.Enabled = true;
 
                     if (ExportDelimeterListBox.SelectedItem == null)
                     {
@@ -646,6 +808,153 @@ namespace SQL_SERVER_IMPORT_EXPORT
             }
         }
 
+        private void TablesToExportCommaList_TextChanged(object sender, EventArgs e)
+        {
+            if (CommaSeperatedListTableSearchRadioButton.Checked == false)
+            {
+                CommaSeperatedListTableSearchRadioButton.Select();
+                TablesToExportCommaList.Select();
+            }
+        }   
 
+        private void TablesToExportRegex_TextChanged(object sender, EventArgs e)
+        {
+            if (RegexPatternTableSearchRadioButton.Checked == false)
+            {
+                RegexPatternTableSearchRadioButton.Select();
+                TablesToExportRegex.Select();
+            }
+        }
+
+        private void TablesToExportListFromSql_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (TablePickerRadioButton.Checked == false)
+            {
+                TablePickerRadioButton.Select();
+                TablesToExportListFromSql.Select();
+            }
+        }
+
+        //TEMPLATES
+        private void ImportTemplate_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string ImportTemplateText = ImportTemplate.Text;
+            if (ImportTemplateText != "")
+            {
+                if(ImportTemplateText == "BMW GENESCO (UNQUOTED PIPE)")
+                {
+                    ServerComboBox.Text = "SQL04";
+                    DatabaseComboBox.Text = "TEMP_BMW";
+                    ExtensionListBoxImport.Text = "txt";
+                    ImportDelimeterListBox.Text = "PIPE";
+                    DoubleQuoted.Checked = false;
+                    InsertToExistingTableCheckBox.Checked = false;
+                    ImportToSingleTableTextBox.Text = "";
+                }
+                else if (ImportTemplateText == "BMW ALWAYS ON (UNQUOTED PIPE)")
+                {
+                    ServerComboBox.Text = "SQL04";
+                    DatabaseComboBox.Text = "BMW";
+                    ExtensionListBoxImport.Text = "txt";
+                    ImportDelimeterListBox.Text = "PIPE";
+                    DoubleQuoted.Checked = false;
+                    InsertToExistingTableCheckBox.Checked = false;
+                    ImportToSingleTableTextBox.Text = "";
+                }
+            }
+        }
+
+        private void ExportTemplate_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string ExportTemplateText = ExportTemplate.Text;
+            if (ExportTemplateText != "")
+            {
+                if (ExportTemplateText == "BMW GENESCO (UNQUOTED PIPE)")
+                {
+                    ServerComboBox.Text = "SQL04";
+                    DatabaseComboBox.Text = "TEMP_BMW";
+                    OutputTypeListBox.Text = "txt";
+                    ExportDelimeterListBox.Text = "PIPE";
+                    ExportQualifierListBox.Text = "<NO QUALIFIER>";
+                    IncludeHeadersCheckBox.Checked = true;
+                    NoSplitRadioButton.Checked = true;
+                    SplitAmounNumericUpDown.Value = 0;
+                    SelectTextBox.Text = "";
+                    FromTextBox.Text = "";
+                    WhereTextBox.Text = "";
+                    GroupByTextBox.Text = "";
+                    OrderByTextBox.Text = "";
+                }
+                else if (ExportTemplateText == "BMW ALWAYS ON (UNQUOTED PIPE)")
+                {
+                    ServerComboBox.Text = "SQL04";
+                    DatabaseComboBox.Text = "BMW";
+                    OutputTypeListBox.Text = "txt";
+                    ExportDelimeterListBox.Text = "PIPE";
+                    ExportQualifierListBox.Text = "<NO QUALIFIER>";
+                    IncludeHeadersCheckBox.Checked = true;
+                    NoSplitRadioButton.Checked = true;
+                    SplitAmounNumericUpDown.Value = 0;
+                    SelectTextBox.Text = "";
+                    FromTextBox.Text = "";
+                    WhereTextBox.Text = "";
+                    GroupByTextBox.Text = "";
+                    OrderByTextBox.Text = "";
+                }
+                else if (ExportTemplateText == "ADROLL (NO HEADER, MAX SIZE 10MB)")
+                {
+                    OutputTypeListBox.Text = "csv";
+                    ExportDelimeterListBox.Text = "COMMA";
+                    ExportQualifierListBox.Text = "\"";
+                    IncludeHeadersCheckBox.Checked = false;
+                    SizeSplitRadioButton.Checked = true;
+                    SplitAmounNumericUpDown.Value = 10;
+                    SelectTextBox.Text = "";
+                    FromTextBox.Text = "";
+                    WhereTextBox.Text = "";
+                    GroupByTextBox.Text = "";
+                    OrderByTextBox.Text = "";
+                }
+                else if (ExportTemplateText == "LINKEDIN (MAX SIZE 19MB)")
+                {
+                    IncludeHeadersCheckBox.Checked = true;
+                    SizeSplitRadioButton.Checked = true;
+                    SplitAmounNumericUpDown.Value = 19;
+                    SelectTextBox.Text = "";
+                    FromTextBox.Text = "";
+                    WhereTextBox.Text = "";
+                    GroupByTextBox.Text = "";
+                    OrderByTextBox.Text = "";
+                }
+                else if (ExportTemplateText == "TIKTOK (MAX SIZE 1000MB)")
+                {
+                    OutputTypeListBox.Text = "csv";
+                    ExportDelimeterListBox.Text = "COMMA";
+                    ExportQualifierListBox.Text = "\"";
+                    IncludeHeadersCheckBox.Checked = true;
+                    SizeSplitRadioButton.Checked = true;
+                    SplitAmounNumericUpDown.Value = 1000;
+                    SelectTextBox.Text = "";
+                    FromTextBox.Text = "";
+                    WhereTextBox.Text = "";
+                    GroupByTextBox.Text = "";
+                    //OrderByTextBox.Text = "";
+                }
+                else if (ExportTemplateText == "DIGI ORDERED BY PRIORITY")
+                {
+                    OutputTypeListBox.Text = "csv";
+                    ExportDelimeterListBox.Text = "COMMA";
+                    ExportQualifierListBox.Text = "\"";
+                    IncludeHeadersCheckBox.Checked = true;
+                    //SizeSplitRadioButton.Checked = true;
+                    //SplitAmounNumericUpDown.Value = 1000;
+                    SelectTextBox.Text = "";
+                    FromTextBox.Text = "";
+                    WhereTextBox.Text = "";
+                    GroupByTextBox.Text = "";
+                    OrderByTextBox.Text = "PRIORITY ASC";
+                }
+            }
+        }
     }
 }
