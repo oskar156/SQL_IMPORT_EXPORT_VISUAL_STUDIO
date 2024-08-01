@@ -4,27 +4,31 @@
  * public List<string> GetFilesToImport(string ImportPath, string Extension, bool ConsoleOutput = true)
  * public DataTable ReadFileIntoDataTableWithColumns(string FilePath, string Delimeter, string FixedWidthColumnFilePath, bool ConsoleOutput = true)
  * public List<DataTable> ReadExcelFileIntoDataTablesWithColumns(string FilePath, ref List<string> TableNames, bool ConsoleOutput = true)
- * public void CreateTableInSqlVarchar(string TableName, string Server, string Database, DataTable DtTable, string Delimeter, bool ConsoleOutput = true)
- * public void CreateTablesInSqlVarchar(List<string> TableNames, string Server, string Database, List<DataTable> DataTables, string Delimeter, bool ConsoleOutput = true)
+ * public void CreateTableInSqlVarchar(string TableName, string Server, string Database, DataTable DtTable, string Delimeter, string ColumnTypeMethod = "DEFAULT VARCHAR", string ColumnTypeFilePath = "", bool ConsoleOutput = true)
+ * public void CreateTablesInSqlVarchar(List<string> TableNames, string Server, string Database, List<DataTable> DataTables, string Delimeter, string ColumnTypeMethod = "DEFAULT VARCHAR", string ColumnTypeFilePath = "", bool ConsoleOutput = true)
  * public void ReadFileIntoDataTableWithRowsAndInsertIntoSqlTable(string FilePath, string TableName, string Server, string Database, DataTable BaseDtTable, int BatchLimit, string Delimeter, bool ConsoleOutput = true)
+ * public void ReadFileIntoDataTableWithRowsAndInsertIntoSqlTableFast(string FilePath, string TableName, string Server, string Database, DataTable BaseDtTable, int BatchLimit, string Delimeter, bool ConsoleOutput = true)
  * public void ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTables(string FilePath, List<string> TableNames, string Server, string Database, List<DataTable> DataTables, int BatchLimit, string Delimeter, bool ConsoleOutput = true)
+ * public void ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTablesFast(string FilePath, List<string> TableNames, string Server, string Database, List<DataTable> DataTables, int BatchLimit, string Delimeter, bool ConsoleOutput = true)
  * public void InsertDataTableUsingSqlBulkCopy(ref string ConnString, ref string TableName, ref DataTable TempDataTable, ref int RowIndex, bool ConsoleOutput = true)
  * 
  * EXPORT FUNCTIONS
  * public List<string> GetListofTablesFromSqlDb(string Server, string Database, List<string> ListOfTablesToSearchFor, bool ConsoleOutput = true)
  * public List<string> GetListofTablesFromSqlDb(string Server, string Database, string RegexSearchPattern = "", bool ConsoleOutput = true)
- * public int ExportTableFromSqlToFile(string Server, string Database, string TableToExport, string ExportPath, string Extension, string Delimeter, string Qualifier, bool IncludeHeaders, string FixedWidthColumnLengthMethod, int SizeLimit, string SizeLimitType, bool IncludeHeaderInSplitFiles, string OrderBy = "", bool ConsoleOutput = true)
+ * public List<string> GetListOfColumnsForTable(string Server, string Database, string TableName, bool ConsoleOutput = true)
+ * public int ExportTableFromSqlToFile(string Server, string Database, string TableToExport, string ExportPath, string Extension, string Delimeter, string Qualifier, bool QualifyEveryField, bool RemoveQualInVal, bool IncludeHeaders, string FixedWidthColumnLengthMethod, decimal SizeLimit, string SizeLimitType, bool IncludeHeaderInSplitFiles, string SelectText = "", string FromText = "", string WhereText = "", string GroupBy = "", string OrderBy = "", bool ConsoleOutput = true)
  * 
  * OTHER FUNCTION
  * public void PrepareValueForImport(ref string Value)
- * 
+ * public Tuple<string, int> ParseColumnWidthLine(string line)
+ * public Tuple<string, string> ParseColumnTypeLine(string line)
  * 
 */
 
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Excel = Microsoft.Office.Interop.Excel;
-using Microsoft.VisualBasic.FileIO; //for TextFieldParser
+using Microsoft.VisualBasic.FileIO; //for TextFieldParser (also right click project > add > references > Microsoft.VisualBasic.FileIO)
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -32,6 +36,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Data.Common;
 
 namespace SQL_SERVER_IMPORT_EXPORT
 {
@@ -44,7 +49,6 @@ namespace SQL_SERVER_IMPORT_EXPORT
         public List<string> GetFilesToImport(string ImportPath, string Extension, bool ConsoleOutput = true)
         {
             //https://stackoverflow.com/questions/20759302/upload-csv-file-to-sql-server
-            if (ConsoleOutput) { Console.WriteLine("Getting file(s) to import from " + ImportPath + "*." + Extension + "..."); }
 
             List<string> FilesToImport = new List<string>();
 
@@ -60,9 +64,11 @@ namespace SQL_SERVER_IMPORT_EXPORT
             if (IsImportPathAFile) //if ImportPath is a file, import only that file
             {
                 FilesToImport.Add(ImportPath);
+                if (ConsoleOutput) { Console.WriteLine("Getting file to import from " + ImportPath + "..."); }
             }
             else //if ImportPath is a direcotry, import only every file in that directory that matches Extension
             {
+                if (ConsoleOutput) { Console.WriteLine("Getting file(s) to import from " + ImportPath + "*." + Extension + "..."); }
                 string[] FilesInPath = Directory.GetFiles(ImportPath, "*." + Extension);
                 foreach (string File in FilesInPath)
                 {
@@ -81,21 +87,21 @@ namespace SQL_SERVER_IMPORT_EXPORT
         }
         public DataTable ReadFileIntoDataTableWithColumns(string FilePath, string Delimeter, string FixedWidthColumnFilePath, bool ConsoleOutput = true)
         {
-            if (ConsoleOutput) { Console.WriteLine("Reading file into DataTable with Columns... "); }
+            if (ConsoleOutput) { Console.Write("Reading file into DataTable with Columns... "); }
 
             DataTable DtTable = new DataTable();
+            Helpers helpers = new Helpers();
 
             if (Delimeter == "FIXED WIDTH")
             {
                 var ColumnDefinitionFile = File.ReadLines(FixedWidthColumnFilePath);
                 foreach (var line in ColumnDefinitionFile)
                 {
-                    string lineTrimmed = line.Trim();
-                    int LastSpaceIndex = lineTrimmed.LastIndexOf(" ");
-                    string ColumnName = lineTrimmed.Substring(0, LastSpaceIndex);
-                    int ColumnLength = Int32.Parse(lineTrimmed.Substring(LastSpaceIndex).Trim());
-
-                    DataColumn DataColumn = new DataColumn(ColumnName, typeof(string));
+                    Tuple<string, int> ColumnDefinition = helpers.ParseColumnWidthLine(line);
+                    string ColumnName = ColumnDefinition.Item1;
+                    int ColumnLength = ColumnDefinition.Item2;
+                    //Console.WriteLine(ColumnName + " " + ColumnLength);
+                    DataColumn DataColumn = new DataColumn(ColumnName);//, typeof(string));
                     DataColumn.MaxLength = ColumnLength;
                     DtTable.Columns.Add(DataColumn);
                 }
@@ -116,7 +122,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 }
             }
 
-            if (ConsoleOutput) { Console.Write("DataTable with columns created"); }
+            if (ConsoleOutput) { Console.WriteLine("DataTable with columns created"); }
 
             return DtTable;
         }
@@ -176,63 +182,132 @@ namespace SQL_SERVER_IMPORT_EXPORT
 
             return DataTables;
         }
-        public void CreateTableInSqlVarchar(string TableName, string Server, string Database, DataTable DtTable, string Delimeter, bool ConsoleOutput = true)
+        public void CreateTableInSqlVarchar(string TableName, string Server, string Database, DataTable DtTable, string Delimeter, string ColumnTypeMethod = "DEFAULT VARCHAR", string ColumnTypeFilePath = "", bool ConsoleOutput = true)
         {
-            if (ConsoleOutput) { Console.WriteLine("Creating table in sql... "); }
+            if (ConsoleOutput) { Console.Write("Creating table in sql... "); }
+
+            List<string> ColumnTypes = new List<string>();
+            Helpers helpers = new Helpers();
+            if (ColumnTypeFilePath != "" && ColumnTypeMethod == "FILE PATH")
+            {
+                var ColumnDefinitionFile = File.ReadLines(ColumnTypeFilePath);
+                foreach (var line in ColumnDefinitionFile)
+                {
+                    Tuple<string, string> ColumnDefinition = helpers.ParseColumnTypeLine(line);
+                    string ColumnName = ColumnDefinition.Item1;
+                    string ColumnType = ColumnDefinition.Item2;
+                    //Console.WriteLine(ColumnName + " " + ColumnType);
+                    //DataColumn DataColumn = new DataColumn(ColumnName);//, typeof(string));
+                    //DataColumn.MaxLength = ColumnLength;
+                    //DtTable.Columns.Add(DataColumn);
+                    ColumnTypes.Add(ColumnType);
+
+                }
+            }
 
             string ColumnsForTableCreationQuery = "";
+            int ColIndex = 0;
 
             foreach (DataColumn Column in DtTable.Columns)
             {
-                if (Delimeter == "FIXED WIDTH")
+                ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + "[" + Column.ColumnName + "] ";
+
+                if (Delimeter == "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
                 {
-                    ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + "[" + Column.ColumnName + "] VARCHAR(" + Column.MaxLength.ToString() + "),";
+                    ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + " VARCHAR(" + Column.MaxLength.ToString() + "),";
                 }
-                else
+                else if (Delimeter == "FIXED WIDTH" && ColumnTypeMethod == "FILE PATH")
                 {
-                    ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + "[" + Column.ColumnName + "] VARCHAR(255),";
+                    ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + " " + ColumnTypes[ColIndex] + ",";
                 }
+                else if (Delimeter != "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
+                {
+                    ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + " VARCHAR(255),";
+                }
+                else if (Delimeter != "FIXED WIDTH" && ColumnTypeMethod == "FILE PATH")
+                {
+                    ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + " " + ColumnTypes[ColIndex] + ",";
+                }
+
+                ColIndex++;
             }
+            ColumnsForTableCreationQuery = ColumnsForTableCreationQuery.Substring(0, ColumnsForTableCreationQuery.Length - 1);
 
             string ConnString = @"Server=" + Server + ";Database=" + Database + ";Trusted_Connection = True;";
             using (SqlConnection Conn = new SqlConnection(ConnString))
             {
                 Conn.Open();
                 string TableCreationQuery = "CREATE TABLE [" + TableName + "] (  " + ColumnsForTableCreationQuery + ")";
+                //Console.WriteLine(TableCreationQuery);
+                //Console.WriteLine(Delimeter);
+                //Console.WriteLine(ColumnTypeMethod);
+                //Console.WriteLine(ColumnTypeFilePath);
                 SqlCommand Cmd = new SqlCommand(TableCreationQuery, Conn);
                 Cmd.ExecuteNonQuery();
             }
             if (ConsoleOutput)
             {
-                if (Delimeter == "FIXED WIDTH")
+                if (Delimeter != "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
                 {
-                    Console.Write("Created Table " + Server + "." + Database + "..[" + TableName + "] ");
+                    Console.WriteLine("Created Table " + Server + "." + Database + "..[" + TableName + "] (all columns VARCHAR(255))");
+                }
+                if (Delimeter == "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
+                {
+                    Console.WriteLine("Created Table " + Server + "." + Database + "..[" + TableName + "] (all columns VARCHAR(N))");
                 }
                 else
                 {
-                    Console.Write("Created Table " + Server + "." + Database + "..[" + TableName + "] (all columns VARCHAR(255))");
+                    Console.WriteLine("Created Table " + Server + "." + Database + "..[" + TableName + "] ");
                 }
             }
         }
-        public void CreateTablesInSqlVarchar(List<string> TableNames, string Server, string Database, List<DataTable> DataTables, string Delimeter, bool ConsoleOutput = true)
+        public void CreateTablesInSqlVarchar(List<string> TableNames, string Server, string Database, List<DataTable> DataTables, string Delimeter, string ColumnTypeMethod = "DEFAULT VARCHAR", string ColumnTypeFilePath = "", bool ConsoleOutput = true)
         {
             if (ConsoleOutput) { Console.WriteLine("Creating " + DataTables.Count.ToString() + "tables in sql... "); }
+
+            List<string> ColumnTypes = new List<string>();
+            Helpers helpers = new Helpers();
+            if (ColumnTypeFilePath != "" && ColumnTypeMethod == "FILE PATH")
+            {
+                var ColumnDefinitionFile = File.ReadLines(ColumnTypeFilePath);
+                foreach (var line in ColumnDefinitionFile)
+                {
+                    Tuple<string, string> ColumnDefinition = helpers.ParseColumnTypeLine(line);
+                    string ColumnName = ColumnDefinition.Item1;
+                    string ColumnType = ColumnDefinition.Item2;
+                    //Console.WriteLine(ColumnName + " " + ColumnType);
+                    //DataColumn DataColumn = new DataColumn(ColumnName);//, typeof(string));
+                    //DataColumn.MaxLength = ColumnLength;
+                    //DtTable.Columns.Add(DataColumn);
+                    ColumnTypes.Add(ColumnType);
+
+                }
+            }
 
             int index = 0;
             foreach (DataTable DataTable in DataTables)
             {
                 string ColumnsForTableCreationQuery = "";
+                int ColIndex = 0;
                 string TableName = TableNames[index];
 
                 foreach (DataColumn Column in DataTable.Columns)
                 {
-                    if (Delimeter == "FIXED WIDTH")
+                    if (Delimeter == "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
                     {
-                        ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + "[" + Column.ColumnName + "] VARCHAR(" + Column.MaxLength.ToString() + "),";
+                        ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + " VARCHAR(" + Column.MaxLength.ToString() + "),";
                     }
-                    else
+                    else if (Delimeter == "FIXED WIDTH" && ColumnTypeMethod == "FILE PATH")
                     {
-                        ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + "[" + Column.ColumnName + "] VARCHAR(255),";
+                        ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + " " + ColumnTypes[ColIndex] + ",";
+                    }
+                    else if (Delimeter != "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
+                    {
+                        ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + " VARCHAR(255),";
+                    }
+                    else if (Delimeter != "FIXED WIDTH" && ColumnTypeMethod == "FILE PATH")
+                    {
+                        ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + " " + ColumnTypes[ColIndex] + ",";
                     }
                 }
 
@@ -246,13 +321,17 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 }
                 if (ConsoleOutput)
                 {
-                    if (Delimeter == "FIXED WIDTH")
+                    if (Delimeter != "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
                     {
-                        Console.WriteLine("Created Table " + Server + "." + Database + "..[" + TableName + "] ");
+                        Console.WriteLine("Created Table " + Server + "." + Database + "..[" + TableName + "] (all columns VARCHAR(255))");
+                    }
+                    if (Delimeter == "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
+                    {
+                        Console.WriteLine("Created Table " + Server + "." + Database + "..[" + TableName + "] (all columns VARCHAR(N))");
                     }
                     else
                     {
-                        Console.WriteLine("Created Table " + Server + "." + Database + "..[" + TableName + "] (all columns VARCHAR(255))");
+                        Console.WriteLine("Created Table " + Server + "." + Database + "..[" + TableName + "] ");
                     }
                 }
 
@@ -261,7 +340,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
         }
         public void ReadFileIntoDataTableWithRowsAndInsertIntoSqlTable(string FilePath, string TableName, string Server, string Database, DataTable BaseDtTable, int BatchLimit, string Delimeter, bool DoubleQuoted, bool ConsoleOutput = true)
         {
-            if (ConsoleOutput) { Console.WriteLine("Reading file into DataTable with Rows... "); }
+            if (ConsoleOutput) { Console.WriteLine("Reading file rows... "); }
 
             string ConnString = @"Server=" + Server + ";Database=" + Database + ";Trusted_Connection = True;";
 
@@ -308,7 +387,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                         {
                             PrepareValueForImport(ref FieldData[cf]);
                         }
-                        if (Row != 0) //skip header
+                        if (Row != 0 || Delimeter == "FIXED WIDTH") //skip header
                         {
                             TempDtTable.Rows.Add(FieldData);
                         }
@@ -333,6 +412,9 @@ namespace SQL_SERVER_IMPORT_EXPORT
                         TempDtTable = BaseDtTable; //not sure if this necessary
                         TempDtTable.Rows.Clear(); //definitely necessary
                     }
+
+                    //if (ConsoleOutput) { if (Row > 0 && Row % 1000000 == 0) { Console.WriteLine("ROW " + Row);} }
+
                     Row++;
                 }
 
@@ -346,10 +428,89 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     TempDtTable.Rows.Clear();
                 }
             }
+            if (ConsoleOutput) { Console.WriteLine(""); }
+        }
+        public void ReadFileIntoDataTableWithRowsAndInsertIntoSqlTableFast(string FilePath, string TableName, string Server, string Database, DataTable BaseDtTable, int BatchLimit, string Delimeter, bool DoubleQuoted, bool ConsoleOutput = true)
+        {
+            if (ConsoleOutput) { Console.WriteLine("Reading file rows... "); }
+
+            string ConnString = @"Server=" + Server + ";Database=" + Database + ";Trusted_Connection = True;";
+
+            using (TextFieldParser FileReader = new TextFieldParser(FilePath))
+            {
+                if (Delimeter == "FIXED WIDTH")
+                {
+                    int[] FieldWidths = new int[BaseDtTable.Columns.Count];
+
+                    int c = 0;
+                    foreach (DataColumn Column in BaseDtTable.Columns)
+                    {
+                        FieldWidths[c] = Column.MaxLength;
+                        c++;
+                    }
+                    //https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualbasic.fileio.textfieldparser.textfieldtype?view=net-8.0
+                    FileReader.TextFieldType = Microsoft.VisualBasic.FileIO.FieldType.FixedWidth;
+                    FileReader.SetFieldWidths(FieldWidths);
+                    FileReader.HasFieldsEnclosedInQuotes = false;
+                }
+                else
+                {
+                    FileReader.SetDelimiters(new string[] { Delimeter });
+                    FileReader.HasFieldsEnclosedInQuotes = DoubleQuoted;
+                }
+
+                int Row = 0;
+                bool LeftoverData = false;
+                DataTable TempDtTable = BaseDtTable;
+
+                while (!FileReader.EndOfData)
+                {
+                    LeftoverData = true;
+
+                    //https://stackoverflow.com/questions/16225909/dealing-with-fields-containing-unescaped-double-quotes-with-textfieldparser
+                    string[] FieldData = null;
+                    FieldData = FileReader.ReadFields();
+                    if (Row != 0) //skip header
+                    {
+                        TempDtTable.Rows.Add(FieldData);
+                    }
+
+                    /***************************************
+                    * INSERT ROWS TO TABLE
+                    ***************************************/
+                    //when we get to Row BatchLimit, import that chunk into SQL Server
+                    //also print to console to help with tracking
+                    if (Row != 0 && Row % BatchLimit == 0)
+                    {
+                        LeftoverData = false;
+                        InsertDataTableUsingSqlBulkCopy(ref ConnString, ref TableName, ref TempDtTable, ref Row);
+
+                        //reset TempDtTable
+                        //if we don't do this, then large files (example: 18 columns/4 million rows) will cause the script to run out of memory
+                        TempDtTable = BaseDtTable; //not sure if this necessary
+                        TempDtTable.Rows.Clear(); //definitely necessary
+                    }
+
+                    //if (ConsoleOutput) { if (Row > 0 && Row % 1000000 == 0) { Console.WriteLine("ROW " + Row);} }
+
+                    Row++;
+                }
+
+                //Importing the remaining data (necessary because of the batching)
+                //the script will only end up coming here to insert data if the current DataTable is under the BatchLimit of rows
+                if (LeftoverData == true)
+                {
+                    InsertDataTableUsingSqlBulkCopy(ref ConnString, ref TableName, ref TempDtTable, ref Row);
+
+                    TempDtTable = BaseDtTable;//not sure if either are necessary at this point, because it's after the loop
+                    TempDtTable.Rows.Clear();
+                }
+            }
+            if (ConsoleOutput) { Console.WriteLine(""); }
         }
         public void ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTables(string FilePath, List<string> TableNames, string Server, string Database, List<DataTable> DataTables, int BatchLimit, string Delimeter, bool ConsoleOutput = true)
         {
-            if (ConsoleOutput) { Console.WriteLine("Reading Excel file into DataTable with Rows... "); }
+            if (ConsoleOutput) { Console.WriteLine("Reading Excel file rows... "); }
 
             string ConnString = @"Server=" + Server + ";Database=" + Database + ";Trusted_Connection = True;";
 
@@ -423,6 +584,8 @@ namespace SQL_SERVER_IMPORT_EXPORT
                                 TempDataTable.Rows.Clear(); //definitely necessary
                             }
                         }
+
+                        //if (ConsoleOutput) { if (RowIndex > 0 && RowIndex % 1000000 == 0) { Console.WriteLine("ROW " + Row); } }
                         RowIndex++;
                     }
 
@@ -439,10 +602,107 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     SheetIndex++;
                 }
             }
+            if (ConsoleOutput) { Console.WriteLine(""); }
         }
+        public void ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTablesFast(string FilePath, List<string> TableNames, string Server, string Database, List<DataTable> DataTables, int BatchLimit, string Delimeter, bool ConsoleOutput = true)
+        {
+            if (ConsoleOutput) { Console.WriteLine("Reading Excel file rows... "); }
+
+            string ConnString = @"Server=" + Server + ";Database=" + Database + ";Trusted_Connection = True;";
+
+            //https://stackoverflow.com/questions/3321082/from-excel-to-datatable-in-c-sharp-with-open-xml
+            using (SpreadsheetDocument SpreadSheetDocument = SpreadsheetDocument.Open(@"" + FilePath, false))
+            {
+
+                IEnumerable<Sheet> Sheets = SpreadSheetDocument.WorkbookPart.Workbook.GetFirstChild<Sheets>().Elements<Sheet>();
+
+                int SheetIndex = 0;
+                foreach (Sheet Sheet in Sheets)
+                {
+                    string SheetName = Sheet.Name;
+                    string TableName = TableNames[SheetIndex];
+                    if (ConsoleOutput) { Console.WriteLine("Sheet " + SheetIndex.ToString() + 1 + ": " + FilePath + " - " + SheetName); }
+
+                    string RelationshipId = Sheets.ElementAt(SheetIndex).Id.Value;//.First().Id.Value;
+                    WorksheetPart WorksheetPart = (WorksheetPart)SpreadSheetDocument.WorkbookPart.GetPartById(RelationshipId);
+                    Worksheet WorkSheet = WorksheetPart.Worksheet;
+                    SheetData SheetData = WorkSheet.GetFirstChild<SheetData>();
+                    IEnumerable<Row> Rows = SheetData.Descendants<Row>();
+
+                    int RowIndex = -1; //-1 so we don't count the header row in RowIndex
+                    bool LeftoverData = false;
+                    DataTable TempDataTable = DataTables[SheetIndex];
+
+
+                    //RBT's answer from: https://stackoverflow.com/questions/5115257/openxml-sdk-returning-a-number-for-cellvalue-instead-of-cells-text 
+                    foreach (Row Row in Rows)
+                    {
+                        LeftoverData = true;
+                        if (RowIndex > 0) //skip header row...
+                        {
+                            DataRow TempRow = TempDataTable.NewRow();
+
+                            int CellIndex = 0;
+                            foreach (Cell Cell in Row)
+                            {
+                                SharedStringTablePart StringTablePart = SpreadSheetDocument.WorkbookPart.SharedStringTablePart;
+                                string value = Cell.CellValue.InnerXml;
+                                string FinalCellValue = "";
+
+                                if (Cell.DataType != null && Cell.DataType.Value == CellValues.SharedString)
+                                {
+                                    FinalCellValue = StringTablePart.SharedStringTable.ChildElements[Int32.Parse(value)].InnerText;
+                                }
+                                else
+                                {
+                                    FinalCellValue = value;
+                                }
+
+                                //PrepareValueForImport(ref FinalCellValue);
+
+                                TempRow[CellIndex] = FinalCellValue;
+                                CellIndex++;
+                            }
+
+                            TempDataTable.Rows.Add(TempRow);
+
+                            //when we get to Row BatchLimit, import that chunk into SQL Server
+                            //also print to console to help with tracking
+                            if (RowIndex != 0 && RowIndex % BatchLimit == 0)
+                            {
+                                LeftoverData = false;
+                                InsertDataTableUsingSqlBulkCopy(ref ConnString, ref TableName, ref TempDataTable, ref RowIndex);
+
+                                //reset TempDataTable
+                                //if we don't do this, then large files will cause the program to run out of memory
+                                TempDataTable = DataTables[SheetIndex]; //not sure if this necessary
+                                TempDataTable.Rows.Clear(); //definitely necessary
+                            }
+                        }
+
+                        //if (ConsoleOutput) { if (RowIndex > 0 && RowIndex % 1000000 == 0) { Console.WriteLine("ROW " + Row); } }
+                        RowIndex++;
+                    }
+
+                    //Importing the remaining data (necessary because of the batching)
+                    //the script will only end up coming here to insert data if the file is under the BatchLimit of rows
+                    if (LeftoverData == true)
+                    {
+                        InsertDataTableUsingSqlBulkCopy(ref ConnString, ref TableName, ref TempDataTable, ref RowIndex);
+
+                        TempDataTable = DataTables[SheetIndex];
+                        TempDataTable.Rows.Clear();
+                    }
+
+                    SheetIndex++;
+                }
+            }
+            if (ConsoleOutput) { Console.WriteLine(""); }
+        }
+        
         public void InsertDataTableUsingSqlBulkCopy(ref string ConnString, ref string TableName, ref DataTable TempDataTable, ref int RowIndex, bool ConsoleOutput = true)
         {
-            if (ConsoleOutput) { Console.Write(RowIndex.ToString() + " rows read"); }
+            if (ConsoleOutput) { Console.Write("\r" + $"{RowIndex:n0}" + " rows read. "); }
             using (SqlConnection Conn = new SqlConnection(ConnString))
             {
                 Conn.Open();
@@ -455,11 +715,11 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     }
 
 
-                    if (ConsoleOutput) { Console.WriteLine("Inserting rows to table... "); }
+                    //if (ConsoleOutput) { Console.Write("Inserting current batch of rows to table... "); }
 
                     SqlBulk.WriteToServer(TempDataTable);
 
-                    if (ConsoleOutput) { Console.WriteLine("Inserted"); }
+                    //if (ConsoleOutput) { Console.Write("Inserted"); }
                 }
             }
         }
@@ -473,21 +733,29 @@ namespace SQL_SERVER_IMPORT_EXPORT
 
             List<string> Tables = new List<string>();
 
+            //convert to upper so we can do case-insensitive matching
+            for(int t = 0; t < ListOfTablesToSearchFor.Count; t++)
+            {
+                ListOfTablesToSearchFor[t] = ListOfTablesToSearchFor[t].ToUpper();
+            }
+
             string ConnString = @"Server=" + Server + ";Database=" + Database + ";Trusted_Connection = True;";
             using (SqlConnection Conn = new SqlConnection(ConnString))
             {
                 Conn.Open();
                 DataTable TablesInSqlDb = Conn.GetSchema("Tables");
-                //int TableIndex = 0;
+
+                int TableIndex = 0;
                 foreach (DataRow Row in TablesInSqlDb.Rows)
                 {
-                    string TableName = Row[2].ToString();
+                    string TableName = Row[2].ToString(); 
 
-                    if (ListOfTablesToSearchFor.Contains(TableName))
+                    if (ListOfTablesToSearchFor.Contains(TableName.ToUpper())) //convert to upper so we can do case-insensitive matching
                     {
                         Tables.Add(TableName);
                     }
-                    //TableIndex++;
+
+                    TableIndex++;
                 }
             }
 
@@ -505,7 +773,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             Regex re = new Regex("");
             if (RegexSearchPattern != "")
             {
-                re = new Regex(RegexSearchPattern);
+                re = new Regex("(?i)" + RegexSearchPattern); //(?i) makes is case-insensitive
             }
 
             string ConnString = @"Server=" + Server + ";Database=" + Database + ";Trusted_Connection = True;";
@@ -513,7 +781,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 Conn.Open();
                 DataTable TablesInSqlDb = Conn.GetSchema("Tables");
-                //int TableIndex = 0;
+                int TableIndex = 0;
                 foreach (DataRow Row in TablesInSqlDb.Rows)
                 {
                     string TableName = Row[2].ToString();
@@ -529,7 +797,24 @@ namespace SQL_SERVER_IMPORT_EXPORT
                             Tables.Add(TableName);
                         }
                     }
-                    //TableIndex++;
+                    
+                    /* GET ROW COUNTS
+                    using (SqlConnection Conn2 = new SqlConnection(ConnString))
+                    {
+                        Conn2.Open();
+                        SqlCommand Cmd = new SqlCommand("SELECT COUNT(*) FROM [" + TableName + "]", Conn2);
+                        SqlDataReader DataReader = Cmd.ExecuteReader();
+
+                        while (DataReader.Read())
+                        {
+                            Console.WriteLine(Int32.Parse(DataReader.GetValue(0).ToString()));
+                        }
+                        Conn2.Close();
+                    }
+                        
+                    */
+
+                    TableIndex++;
                 }
             }
 
@@ -550,7 +835,35 @@ namespace SQL_SERVER_IMPORT_EXPORT
             }
             return Tables;
         }
-        public int ExportTableFromSqlToFile(string Server, string Database, string TableToExport, string ExportPath, string Extension, string Delimeter, string Qualifier, bool IncludeHeaders, string FixedWidthColumnLengthMethod, int SizeLimit, string SizeLimitType, bool IncludeHeaderInSplitFiles, string OrderBy = "", bool ConsoleOutput = true)
+
+        
+        public List<string> GetListOfColumnsForTable(string Server, string Database, string TableName, bool ConsoleOutput = true)
+        {
+            if (ConsoleOutput) { Console.WriteLine("Getting Column Names for [" + Server + "].[" + Database + "]..[" + TableName + "]"); }
+            List<string> ColumnNames = new List<string>();
+
+            string ConnString = @"Server=" + Server + ";Database=" + Database + ";Trusted_Connection = True;";
+            using (SqlConnection Conn = new SqlConnection(ConnString))
+            {
+                Conn.Open();
+                string SqlQuery = " SELECT COLUMN_NAME as [COLUMN_NAMES] FROM [" + Database + "].information_schema.columns WHERE table_name = '" + TableName + "' ";
+                SqlCommand Cmd = new SqlCommand(SqlQuery, Conn);
+                SqlDataReader DataReader = Cmd.ExecuteReader();
+
+                while (DataReader.Read())
+                {
+                    ColumnNames.Add(DataReader.GetValue(0).ToString());
+                }
+
+                Conn.Close();
+            }
+
+            ColumnNames.Sort();
+
+            return ColumnNames;
+        }
+
+        public int ExportTableFromSqlToFile(string Server, string Database, string TableToExport, string ExportPath, string Extension, string Delimeter, string Qualifier, bool QualifyEveryField, bool RemoveQualInVal, bool IncludeHeaders, string FixedWidthColumnLengthMethod, decimal SizeLimit, string SizeLimitType, bool IncludeHeaderInSplitFiles, string SelectText = "", string FromText = "", string WhereText = "", string GroupBy = "", string OrderBy = "", bool ConsoleOutput = true)
         {
             int FilesCreated = 0;
             if (ConsoleOutput) { Console.WriteLine("Reading table from SQL Server"); }
@@ -561,19 +874,46 @@ namespace SQL_SERVER_IMPORT_EXPORT
             using (SqlConnection Conn = new SqlConnection(ConnString))
             {
                 Conn.Open();
-                string TableExportQuery = "SELECT * FROM [" + TableToExport + "]";
-                if(OrderBy != "")
+
+                //Write the Query
+                string TableExportQuery = "SELECT "; //SELECT
+                if (SelectText != "") 
                 {
-                    TableExportQuery += " ORDER BY " + OrderBy;
+                    TableExportQuery += " " + SelectText + " ";
+                } 
+                else
+                {
+                    TableExportQuery += " * ";
                 }
 
+                TableExportQuery += " FROM [" + TableToExport + "] "; //FROM
+
+                if (FromText != "") { TableExportQuery += " " + FromText + " "; } //from extra
+
+                if (WhereText != "") {TableExportQuery += " WHERE " + WhereText + " "; } //WHERE
+
+                if (GroupBy != "") { TableExportQuery += " GROUP BY " + GroupBy + " "; } //GROUP BY
+
+                if (OrderBy != "") {TableExportQuery += " ORDER BY " + OrderBy + " ";} //ORDER BY
+
+                Console.WriteLine("SQL QUERY:\n" + TableExportQuery);
+
+                //Run the Query
                 SqlCommand Cmd = new SqlCommand(TableExportQuery, Conn);
-                DataReader = Cmd.ExecuteReader();
+
+                try
+                {
+                    DataReader = Cmd.ExecuteReader();
+                }
+                catch
+                {
+                    Console.WriteLine("INVALID SQL QUERY!");
+                    return 0;
+                }
 
                 //https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqldatareader?view=netframework-4.8.1#properties
                 int RowCount = 0;// DataReader.RecordsAffected; RETURNS -1 WHEN I TRIED IT
-                int ColCount = DataReader.FieldCount;
-
+                
                 if (ConsoleOutput) { Console.WriteLine("Exporting table to file"); }
 
                 //ExportPath
@@ -590,6 +930,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 {
                     //https://stackoverflow.com/questions/41605649/i-want-to-create-xlsx-excel-file-from-c-sharp
                     //need to get count
+                    int ColCount = DataReader.FieldCount;
                     using (SqlConnection Conn2 = new SqlConnection(ConnString))
                     {
                         Conn2.Open();
@@ -599,7 +940,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
 
                         while (CountDataReader.Read())
                         {
-                            RowCount = Int32.Parse(CountDataReader.GetValue(0).ToString());
+                            RowCount = Int32.Parse(CountDataReader.GetValue(0).ToString()) + 1;
                         }
                     }
                     
@@ -639,7 +980,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     while (DataReader.Read())
                     {
                         DataReader.GetValues(Output);
-
+                        
                         int ExcelColIndex = 1;
                         foreach (object OutputField in Output)
                         {
@@ -651,10 +992,12 @@ namespace SQL_SERVER_IMPORT_EXPORT
                                     ValueToWrite = "'" + ValueToWrite;
                                 }
                             }
+                            //if (ExcelRowIndex == 1 || ExcelRowIndex == 2) { Console.Write(ValueToWrite); }
                             OutputRows[ExcelRowIndex - 1, ExcelColIndex - 1] = ValueToWrite;
                             ExcelColIndex++;
                         }
 
+                        if (ConsoleOutput) { if (ExcelRowIndex > 0 && ExcelRowIndex % 1000000 == 0) { Console.Write("\rRows exported: " + $"{ExcelRowIndex:n0}"); } }
                         ExcelRowIndex++;
                     }
                     //we want to write to the sheet as sparingly as possible, because it is slow
@@ -662,26 +1005,29 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     if (OutputRows.Length > 0)
                     {
                         Worksheet.Range[Worksheet.Cells[ExcelStartRowIndex, 1], Worksheet.Cells[RowCount, DataReader.FieldCount]].Value = OutputRows;
+                        //insufficient memory - may need to batch the export
                     }
 
                     Workbook.SaveAs(ExportPath + "\\" + TableToExport + ".xlsx");
+                    FilesCreated++;
                     Workbook.Close();
                     Xlsx.Quit();
 
-
+                    if (ConsoleOutput) {if (ExcelRowIndex % 1000000 != 0) { Console.WriteLine("\rRows exported: " + $"{ExcelRowIndex:n0}"); }}
                 }
                 else //anything other than excel
                 {
+                    int FieldCount = DataReader.FieldCount;
                     //build header
                     List<string> TableColumns = new List<string>();
-                    for (int ColumnIndex = 0; ColumnIndex < DataReader.FieldCount; ColumnIndex++)
+                    for (int ColumnIndex = 0; ColumnIndex < FieldCount; ColumnIndex++)
                     {
                         TableColumns.Add(DataReader.GetName(ColumnIndex));
                     }
 
                     StreamWriter sw = new StreamWriter(FileExportPath);
                     FilesCreated++;
-                    object[] Output = new object[DataReader.FieldCount];
+                    object[] Output = new object[FieldCount];
 
                     List<string> FixedWidthColumnNames = new List<string>();
                     List<int> FixedWidthColumnLengths = new List<int>();
@@ -693,7 +1039,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                         if (Delimeter == "FIXED WIDTH")
                         {
 
-                            for (int ColumnIndex = 0; ColumnIndex < DataReader.FieldCount; ColumnIndex++)
+                            for (int ColumnIndex = 0; ColumnIndex < FieldCount; ColumnIndex++)
                             {
                                 string CurrentColumnName = DataReader.GetName(ColumnIndex);
                                 string CurrentColumnLengthQuery = "";
@@ -705,7 +1051,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                                 else if (FixedWidthColumnLengthMethod == "COL_LENGTH")
                                 {
                                     CurrentColumnLengthQuery = "SELECT COL_LENGTH('[" + TableToExport + "]', '[" + CurrentColumnName + "]')";
-                                    Console.Write(CurrentColumnLengthQuery);
+                                    //Console.Write(CurrentColumnLengthQuery);
                                 }
 
                                 using (SqlConnection Conn2 = new SqlConnection(ConnString))
@@ -716,8 +1062,17 @@ namespace SQL_SERVER_IMPORT_EXPORT
                                     while (CurrentColumnLengthDataReader.Read())
                                     {
                                         FixedWidthColumnNames.Add(CurrentColumnName);
-                                        Console.Write(CurrentColumnLengthDataReader.GetValue(0).ToString());
-                                        int FixedWidthColumnLength = Int32.Parse(CurrentColumnLengthDataReader.GetValue(0).ToString());
+                                        //Console.Write(CurrentColumnLengthDataReader.GetValue(0).ToString());
+                                        int FixedWidthColumnLength = 0;
+                                        try
+                                        {
+                                            FixedWidthColumnLength = Int32.Parse(CurrentColumnLengthDataReader.GetValue(0).ToString());
+                                        }
+                                        catch
+                                        {
+                                            FixedWidthColumnLength = 0;
+                                        }
+
                                         if (FixedWidthColumnLength == 0)
                                         {
                                             FixedWidthColumnLength = 1;
@@ -739,8 +1094,36 @@ namespace SQL_SERVER_IMPORT_EXPORT
                         }
                         else
                         {
-                            HeaderRow = string.Join(Qualifier + Delimeter + Qualifier, TableColumns);
-                            HeaderRow = Qualifier + HeaderRow + Qualifier;
+                            //if(QualifyEveryField)
+                            //{
+                            //    HeaderRow = string.Join(Qualifier + Delimeter + Qualifier, TableColumns);
+                            //    HeaderRow = Qualifier + HeaderRow + Qualifier;
+                            //}
+                            //else
+                            //{
+                                foreach (string TblCol in TableColumns)
+                                {
+                                    //clean
+                                    string TblColClean = TblCol;
+                                    if(RemoveQualInVal && Qualifier != "" && Qualifier != null)
+                                    {
+                                        TblColClean = TblColClean.Replace(Qualifier, "");
+                                    }
+
+                                    //write to HeaderRow
+                                    if(QualifyEveryField || TblColClean.Contains(Delimeter))
+                                    {
+                                        HeaderRow = HeaderRow + Qualifier + TblColClean + Qualifier + Delimeter;
+                                    }
+                                    else
+                                    {
+                                        HeaderRow = HeaderRow + TblColClean + Delimeter;
+                                    }
+
+                                }
+                                //remove last delimeter
+                                HeaderRow = HeaderRow.Remove(HeaderRow.Length - 1);
+                            //}
                             sw.WriteLine(HeaderRow);
                         }
                     }
@@ -750,7 +1133,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     int SplitFileIndex = 0;
                     while (DataReader.Read())
                     {
-                        DataReader.GetValues(Output);
+                        DataReader.GetValues(Output); //breaks with spatial data
                         string CurrentRow = "";
 
                         if (Delimeter == "FIXED WIDTH")
@@ -774,14 +1157,63 @@ namespace SQL_SERVER_IMPORT_EXPORT
                         }
                         else
                         {
-                            CurrentRow = string.Join(Qualifier + Delimeter + Qualifier, Output);
-                            CurrentRow = Qualifier + CurrentRow + Qualifier;
+                            //if (QualifyEveryField)
+                            //{
+                            //    CurrentRow = string.Join(Qualifier + Delimeter + Qualifier, Output);
+                            //    CurrentRow = Qualifier + CurrentRow + Qualifier;
+                            //}
+                            //else
+                            //{
+                                foreach (object CrFld in Output)
+                                {
+                                    //clean field, handle nulls
+                                    string CrFldClean = "";
+                                    if(CrFld.GetType() == typeof(string))
+                                    {
+                                        if (CrFld == null)
+                                        {
+                                            CrFldClean = "";
+                                        }
+                                        else
+                                        {
+                                            CrFldClean = CrFld.ToString();
+                                        }
+                                    }
+                                    else if (CrFld.GetType() != typeof(string))
+                                    {
+                                        if (CrFld == null)
+                                        {
+                                            CrFldClean = "";
+                                        }
+                                        else
+                                        {
+                                            CrFldClean = CrFld.ToString();
+                                        }
+                                    }
+
+                                    if(RemoveQualInVal && Qualifier != "" && Qualifier != null)
+                                    {
+                                        CrFldClean = CrFldClean.Replace(Qualifier, "");
+                                    }
+
+                                    //write field to CurrentRow
+                                    if (QualifyEveryField || CrFldClean.Contains(Delimeter))
+                                    {
+                                        CurrentRow = CurrentRow + Qualifier + CrFldClean + Qualifier + Delimeter;
+                                    }
+                                    else
+                                    {
+                                        CurrentRow = CurrentRow + CrFldClean + Delimeter;
+                                    }
+                                }
+                                //remoev last delimeter
+                                CurrentRow = CurrentRow.Remove(CurrentRow.Length - 1);
+                            //}
                         }
 
                         if (SizeLimit > 0)
                         {
-                            if ((SizeLimitType == "ROW"  && RowIndex % SizeLimit == 0 && RowIndex > 0) ||
-                                (SizeLimitType == "SIZE" && (int)sw.BaseStream.Length % (SizeLimit * 1048576) == 0 && RowIndex > 0 && (int)sw.BaseStream.Length > 0))
+                            if (SizeLimitType == "ROW"  && RowIndex % SizeLimit == 0 && RowIndex > 0)
                             {
                                 SplitFileIndex++;
                                 sw.Close();
@@ -793,11 +1225,52 @@ namespace SQL_SERVER_IMPORT_EXPORT
                                     sw.WriteLine(HeaderRow);
                                 }
                             }
+                            else if (SizeLimitType == "SIZE" || SizeLimitType == "SIZE1024")
+                            {
+                                int MbSize = 0;
+                                if(SizeLimitType == "SIZE")
+                                {
+                                    MbSize = 1000000;
+                                }
+                                else if(SizeLimitType == "SIZE1024")
+                                {
+                                    MbSize = 1048576;
+                                }
+                                /*
+                                 * check file current size
+                                 * check line current size
+                                 * add them
+                                 * if greater than split then split
+                                 * reset SizeCounter
+                                 */
+                                int FileSize = (int)sw.BaseStream.Length;
+                                int CurrentLineSize = (int)CurrentRow.Length * sizeof(System.Char);
+                                int FileProjectedSize = FileSize + CurrentLineSize;
+
+                                if (SizeLimit * MbSize <= FileProjectedSize && RowIndex > 0 && FileSize > 0 && CurrentLineSize > 0) 
+                                {
+                                    SplitFileIndex++;
+                                    sw.Close();
+                                    sw = new StreamWriter(FileExportPathBase + "-" + SplitFileIndex.ToString() + "." + Extension);
+                                    FilesCreated++;
+                                    sw.Write("");
+                                    if (IncludeHeaders && IncludeHeaderInSplitFiles)
+                                    {
+                                        sw.WriteLine(HeaderRow);
+                                    }
+                                }
+                            }
                         }
                         sw.WriteLine(CurrentRow);
+                        //every n rows?
+                        //sw.Flush();
+
+                        if (ConsoleOutput) { if (RowIndex > 0 && RowIndex % 1000000 == 0) { Console.Write("\rRows exported: " + $"{RowIndex:n0}"); } }
 
                         RowIndex++;
                     }
+
+                    if (ConsoleOutput) { if (RowIndex % 1000000 != 0) { Console.WriteLine("\rRows exported: " + $"{RowIndex:n0}"); } }
 
                     sw.Close();
 
@@ -828,7 +1301,70 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 Value = Value.Substring(0, 255);
             }
         }
+        public Tuple<string, int> ParseColumnWidthLine(string line)
+        {
+            string ColumnName = "";
+            int ColumnLength = 0;
+            string LineTrimmed = line.Trim();
 
+            if (LineTrimmed[0] == '[')
+            {
+                Regex re = new Regex("\\[.*\\]");
+                string ColumnNameRaw = re.Match(line).ToString();
+                string ColumnLengthRaw = LineTrimmed.Substring(ColumnNameRaw.Length).Trim();
+
+                ColumnName = ColumnNameRaw.Substring(1, ColumnNameRaw.Length - 2).Trim();
+                ColumnLength = Int32.Parse(ColumnLengthRaw);
+            }
+            else
+            {
+                int LastSpaceIndex = LineTrimmed.LastIndexOf(" ");
+
+                ColumnName = LineTrimmed.Substring(0, LastSpaceIndex);
+                ColumnLength = Int32.Parse(LineTrimmed.Substring(LastSpaceIndex).Trim());
+            }
+
+            return new Tuple<string, int>(ColumnName, ColumnLength);
+        }
+        public Tuple<string, string> ParseColumnTypeLine(string line)
+        {
+            string ColumnName = "";
+            string ColumnType = "";
+            string LineTrimmed = line.Trim();
+
+            if (LineTrimmed[0] == '[')
+            {
+                Regex re = new Regex("\\[.*\\]");
+                string ColumnNameRaw = re.Match(line).ToString();
+
+                ColumnName = ColumnNameRaw.Substring(1, ColumnNameRaw.Length - 2).Trim();
+                ColumnType = LineTrimmed.Substring(ColumnNameRaw.Length).Trim();
+            }
+            else
+            {
+                int LastSpaceIndex = LineTrimmed.LastIndexOf(" ");
+
+                ColumnName = LineTrimmed.Substring(0, LastSpaceIndex);
+                ColumnType = LineTrimmed.Substring(LastSpaceIndex).Trim();
+            }
+
+            return new Tuple<string, string>(ColumnName, ColumnType);
+        }
+
+        /*
+        public T ConvertFromDBVal<T>(object obj)
+        {
+            //https://stackoverflow.com/questions/870697/unable-to-cast-object-of-type-system-dbnull-to-type-system-string
+            if (obj == null || obj == DBNull.Value)
+            {
+                return default(T); // returns the default value for the type
+            }
+            else
+            {
+                return (T)obj;
+            }
+        }
+        */
 
     }
 }
