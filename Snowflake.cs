@@ -29,12 +29,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 
                 Console.WriteLine(1);
                 // Set Connection String
-                //string ConnectionString = "account=UKA60997;user=OSCAR;password=Riguadon74!;Warehouse=mywarehouse;db=DATA_ENGINEERING;schema=public;role=SYSADMIN;warehouse=LOW_PRIORITY;host=UKA60997.us-west-2.snowflakecomputing.com";
-                string ConnectionString = "Account=BTA87963;User=OSCAR;Password=Riguadon74!;Warehouse=DATA_ENGINEERING;Database=DATA_ENGINEERING;Schema=public;Role=SYSADMIN;host=BTA87963.us-west-2.snowflakecomputing.com";
-
-                //account  UKA60997  select CURRENT_ACCOUNT();
-                //region  AWS_US_WEST_2  select cURRENT_REGION();
-                //"account=BTA87963;user=OSCAR;password=Riguadon74!;db=DATA_ENGINEERING;schema=public;role=SYSADMIN;warehouse=LOW_PRIORITY;host=BTA87963.us-west-2.snowflakecomputing.com";
+                string ConnectionString = ""
                 conn.ConnectionString = ConnectionString;
                 Console.WriteLine(ConnectionString);
 
