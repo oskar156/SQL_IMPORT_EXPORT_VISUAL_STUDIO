@@ -267,8 +267,9 @@ namespace SQL_SERVER_IMPORT_EXPORT
                         }
                         else if(ConnectionInfo.Environ == "SNOWFLAKE")
                         {
-                            Helpers.CreateTablesInSnowflakeVarchar(TableNames, ConnectionInfo, Snowflake, BaseDtTables, ActualDelimeter, ColumnTypeMethod, ColumnTypeFilePath);
-                            TablesCreated++;
+                            //Helpers.CreateTablesInSnowflakeVarchar(TableNames, ConnectionInfo, Snowflake, BaseDtTables, ActualDelimeter, ColumnTypeMethod, ColumnTypeFilePath);
+                            //THIS IS DONE IN THIS: ReadFileIntoDataTableWithRowsAndInsertIntoSqlServerTable()
+                            TablesCreated += BaseDtTables.Count;
                         }
                     }
                 }
@@ -286,7 +287,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     {
 
                     }
-                    }
+                }
                 else
                 {
                     if (ConnectionInfo.Environ == "SQL SERVER")
@@ -781,7 +782,11 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 ImportDelimeterListBox.Enabled = true;
                 ImportDelimeterListBox.SelectedItem = "COMMA";
                 //ImportDelimeterListBox.Enabled = false;
-                DoubleQuoted.Enabled = true;
+
+                if(EnvironComboBox.Text == "SQL SERVER")
+                {
+                    DoubleQuoted.Enabled = true;
+                }
             }
             else
             {
@@ -790,7 +795,10 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 {
                     ImportDelimeterListBox.SelectedItem = "COMMA";
                 }
-                DoubleQuoted.Enabled = true;
+                if (EnvironComboBox.Text == "SQL SERVER")
+                {
+                    DoubleQuoted.Enabled = true;
+                }
             }
         }
         public void UpdateImportDelimeterListBox()
@@ -1146,6 +1154,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 ServerComboBox.Text = string.Empty;
                 ServerComboBox.Items.Clear();
+                ServerComboBox.Enabled = true;
 
                 DatabaseComboBox.Text = string.Empty;
                 DatabaseComboBox.Items.Clear();
@@ -1195,6 +1204,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 ServerComboBox.Text = string.Empty;
                 ServerComboBox.Items.Clear();
+                ServerComboBox.Enabled = false;
 
                 DatabaseComboBox.Text = string.Empty;
                 DatabaseComboBox.Items.Clear();
