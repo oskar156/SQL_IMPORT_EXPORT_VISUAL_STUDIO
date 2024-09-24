@@ -1,4 +1,4 @@
-﻿/* TABLE OF CONTENTS
+/* TABLE OF CONTENTS
  * 
  * fix writeline/writes
  * fix when you select excel import (and export) doublequotes
@@ -18,6 +18,7 @@
  * private void OutputTypeListBox_SelectedIndexChanged(object sender, EventArgs e
  * private void ExportDelimeterListBox_SelectedIndexChanged(object sender, EventArgs e)
  * private void ExportQualifierListBox_SelectedIndexChanged(object sender, EventArgs e)
+ * private void EnvironComboBox_SelectedIndexChanged(object sender, EventArgs e)
  * 
  * DEPENDENCIES
  * DocumentFormat.OpenXml.Packaging - import excel
@@ -41,6 +42,8 @@ using System.Windows.Forms;
 using System.Security;
 using System.Diagnostics;
 using System.Reflection;
+using System.Web.UI.WebControls;
+using DocumentFormat.OpenXml.Math;
 
 namespace SQL_SERVER_IMPORT_EXPORT
 {
@@ -54,6 +57,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
         {
             InitializeComponent();
 
+            FormData FormData = new FormData();
             //default values
             ExtensionListBoxImport.SetSelected(0, true); //csv
             ImportDelimeterListBox.SetSelected(0, true); //COMMA
@@ -78,7 +82,9 @@ namespace SQL_SERVER_IMPORT_EXPORT
             //ExportPathTextBox.Text = System.IO.Directory.GetCurrentDirectory();//Environment.CurrentDirectory;
             //SelectTextBox.Text = System.AppDomain.CurrentDomain.BaseDirectory;// System.IO.Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
             //GroupByTextBox.Text = Application.UserAppDataPath;//Application.StartupPath;
-            
+
+            FormData.Environs.ToList().ForEach(n => EnvironComboBox.Items.Add(n));
+            EnvironComboBox.Text = "SQL SERVER";
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -121,6 +127,8 @@ namespace SQL_SERVER_IMPORT_EXPORT
             Console.WriteLine("------------------------------");
 
             Helpers Helpers = new Helpers();
+            Snowflake Snowflake = new Snowflake();
+            ConnectionInfo ConnectionInfo = new ConnectionInfo(); //gets connection info straight from the form
 
             /***************************************
              * CONSTANTS
@@ -131,13 +139,27 @@ namespace SQL_SERVER_IMPORT_EXPORT
             /***************************************
              * USER INPUT
             ***************************************/
-            string Server = ServerComboBox.Text;
-            string Database = DatabaseComboBox.Text;
-
-            if(Server == "" || Database == "")
+            if (ConnectionInfo.Environ == "")
             {
-                Console.WriteLine("Server and Database must not be blank!\n");
+                Console.WriteLine("Environ. must not be blank!");
                 return;
+            }
+            else if (ConnectionInfo.Environ == "SQL SERVER " && (ConnectionInfo.Server == "" || ConnectionInfo.Database == ""))
+            {
+                Console.WriteLine("SQL-SERVER Server and Database must not be blank!");
+                return;
+            }
+            else if (ConnectionInfo.Environ == "SNOWFLAKE")
+            {
+                if (ConnectionInfo.Database == "")
+                {
+                    Console.WriteLine("SNOWFLAKE Database must not be blank!");
+                    return;
+                }
+                else
+                {
+                    Snowflake.ConnectToDb(ConnectionInfo);
+                }
             }
 
             string Extension = ExtensionListBoxImport.Text;
@@ -181,7 +203,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 return;
             }
 
-            Console.WriteLine("Server.Databse: " + Server + "." + Database);
+            Console.WriteLine("Server.Databse: " + ServerLabel + "." + Database);
             Console.WriteLine("BatchLimit: " + BatchLimit.ToString());
 
             /***************************************
@@ -229,6 +251,8 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     else
                     {
                         BaseDtTable = Helpers.ReadFileIntoDataTableWithColumns(FilePath, ActualDelimeter, FixedWidthColumnFilePath);
+                        BaseDtTables.Add(BaseDtTable);
+                        TableNames.Add(TableName);
                     }
 
                     /***************************************
@@ -236,14 +260,14 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     ***************************************/
                     if (ImportToExistingTable == false)
                     {
-                        if (Extension == "xls*")
+                        if (ConnectionInfo.Environ == "SQL SERVER")
                         {
-                            Helpers.CreateTablesInSqlVarchar(TableNames, Server, Database, BaseDtTables, ActualDelimeter, ColumnTypeMethod, ColumnTypeFilePath);
+                            Helpers.CreateTablesInSqlServerVarchar(TableNames, ConnectionInfo, BaseDtTables, ActualDelimeter, ColumnTypeMethod, ColumnTypeFilePath);
                             TablesCreated += BaseDtTables.Count;
                         }
-                        else
+                        else if(ConnectionInfo.Environ == "SNOWFLAKE")
                         {
-                            Helpers.CreateTableInSqlVarchar(TableName, Server, Database, BaseDtTable, ActualDelimeter, ColumnTypeMethod, ColumnTypeFilePath);
+                            Helpers.CreateTablesInSnowflakeVarchar(TableNames, ConnectionInfo, Snowflake, BaseDtTables, ActualDelimeter, ColumnTypeMethod, ColumnTypeFilePath);
                             TablesCreated++;
                         }
                     }
@@ -254,41 +278,41 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 ***************************************/
                 if (Extension == "xls*")
                 {
-                    if (FasterImport == true)
+                    if(ConnectionInfo.Environ == "SQL SERVER")
                     {
-                        //faster but more error prone to irregular characters and field lengths over 255
-                        Helpers.ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTablesFast(FilePath, TableNames, Server, Database, BaseDtTables, BatchLimit, ActualDelimeter);
+                        Helpers.ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlServerTables(FilePath, TableNames, ConnectionInfo, BaseDtTables, BatchLimit, ActualDelimeter, FasterImport);
                     }
-                    else if (FasterImport == false)
+                    else if (ConnectionInfo.Environ == "SNOWFLAKE")
                     {
-                        Helpers.ReadExcelFilePerSheetIntoDataTablesWithRowsAndInsertIntoSqlTables(FilePath, TableNames, Server, Database, BaseDtTables, BatchLimit, ActualDelimeter);
+
                     }
-                    FilesImported += BaseDtTables.Count;
-                }
+                    }
                 else
                 {
-                    if(FasterImport == true)
+                    if (ConnectionInfo.Environ == "SQL SERVER")
                     {
-                        //faster but more error prone to irregular characters and field lengths over 255
-                        Helpers.ReadFileIntoDataTableWithRowsAndInsertIntoSqlTableFast(FilePath, TableName, Server, Database, BaseDtTable, BatchLimit, ActualDelimeter, IsDoubleQuoted);
+                        Helpers.ReadFileIntoDataTableWithRowsAndInsertIntoSqlServerTable(FilePath, TableName, ConnectionInfo, BaseDtTable, BatchLimit, ActualDelimeter, IsDoubleQuoted, FasterImport);
                     }
-                    else if (FasterImport == false)
+                    else if (ConnectionInfo.Environ == "SNOWFLAKE")
                     {
-                        Helpers.ReadFileIntoDataTableWithRowsAndInsertIntoSqlTable(FilePath, TableName, Server, Database, BaseDtTable, BatchLimit, ActualDelimeter, IsDoubleQuoted);
+                        Helpers.ReadFileIntoDataTableWithRowsAndInsertIntoSnowflakeTable(FilePath, TableName, ConnectionInfo, Snowflake, BaseDtTable, BatchLimit, ActualDelimeter, IsDoubleQuoted, FasterImport);
                     }
-                    FilesImported++;
                 }
+                FilesImported += BaseDtTables.Count;
+
+                BaseDtTables.Clear();
+                TableNames.Clear();
 
                 Console.WriteLine("");
             }
 
             if (ImportToSingleTable == false)
             {
-                Console.WriteLine(FilesImported.ToString() + " files imported to " + Server + "." + Database);
+                Console.WriteLine(FilesImported.ToString() + " files imported to " + ConnectionInfo.Environ + "-" +  ConnectionInfo.Server + "-" + ConnectionInfo.Database);
             }
             else if (ImportToSingleTable == true)
             {
-                Console.WriteLine(FilesImported.ToString() + " files imported to " + Server + "." + Database + ".." + TableName);
+                Console.WriteLine(FilesImported.ToString() + " files imported to " + ConnectionInfo.Environ + "-" + ConnectionInfo.Server + "-" + ConnectionInfo.Database + "-" + TableName);
             }
 
             Console.WriteLine("");
@@ -320,6 +344,8 @@ namespace SQL_SERVER_IMPORT_EXPORT
             Console.WriteLine("------------------------------");
 
             Helpers Helpers = new Helpers();
+            Snowflake Snowflake = new Snowflake();
+            ConnectionInfo ConnectionInfo = new ConnectionInfo(); //gets connection info straight from the form
 
             /***************************************
              * CONSTANTS
@@ -328,13 +354,27 @@ namespace SQL_SERVER_IMPORT_EXPORT
             /***************************************
              * USER INPUT
             ***************************************/
-            string Server = ServerComboBox.Text;
-            string Database = DatabaseComboBox.Text;
-
-            if (Server == "" || Database == "")
+            if (ConnectionInfo.Environ == "")
             {
-                Console.WriteLine("Server and Database must not be blank!");
+                Console.WriteLine("Environ. must not be blank!");
                 return;
+            }
+            else if (ConnectionInfo.Environ == "SQL SERVER " && (ConnectionInfo.Server == "" || ConnectionInfo.Database == ""))
+            {
+                Console.WriteLine("SQL-SERVER Server and Database must not be blank!");
+                return;
+            }
+            else if (ConnectionInfo.Environ == "SNOWFLAKE")
+            {
+                if (ConnectionInfo.Database == "")
+                {
+                    Console.WriteLine("SNOWFLAKE Database must not be blank!");
+                    return;
+                }
+                else
+                {
+                    Snowflake.ConnectToDb(ConnectionInfo);
+                }
             }
 
             bool TableSearchMethodIsCommaList = CommaSeperatedListTableSearchRadioButton.Checked;
@@ -420,7 +460,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 Directory.CreateDirectory(ExportPath);
             }
 
-            Console.WriteLine("Server.Databse: " + Server + "." + Database);
+            ConnectionInfo.print();
 
             /***************************************
              * GET TABLES TO EXPORT
@@ -435,13 +475,27 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 //User types out comma-seperated list, which is checked against tables that exist in SQL
                 //Only the table names that match are returned
-                TablesFromSqlDb = Helpers.GetListofTablesFromSqlDb(Server, Database, TablesToExportCommaStrList);
+                if (ConnectionInfo.Environ == "SQL SERVER")
+                {
+                    TablesFromSqlDb = Helpers.GetListofTablesFromSqlServerDb(ConnectionInfo, TablesToExportCommaStrList);
+                }
+                else if (ConnectionInfo.Environ == "SNOWFLAKE")
+                {
+                    TablesFromSqlDb = Helpers.GetListofTablesFromSnowflakeDb(Snowflake, TablesToExportCommaStrList);
+                }
             }
             else if (TableSearchMethodIsRegexPattern)
             {
                 //User types out a regex pattern, which is checked against tables that exist in SQL
                 //Only the table names that match are returned
-                TablesFromSqlDb = Helpers.GetListofTablesFromSqlDb(Server, Database, TablesToExportRegexText);
+                if (ConnectionInfo.Environ == "SQL SERVER")
+                {
+                    TablesFromSqlDb = Helpers.GetListofTablesFromSqlServerDb(ConnectionInfo, TablesToExportRegexText);
+                }
+                else if (ConnectionInfo.Environ == "SNOWFLAKE")
+                {
+                    TablesFromSqlDb = Helpers.GetListofTablesFromSnowflakeDb(Snowflake, TablesToExportRegexText);
+                }
             }
             else if (TableSearchMethodIsTablePicker)
             {
@@ -460,12 +514,39 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 string TableName = TablesFromSqlDb[t];
                 Console.WriteLine("Table " + (t + 1).ToString() + ": " + TableName);
-                int FilesCreated = Helpers.ExportTableFromSqlToFile(Server, Database, TableName, ExportPath, Extension, ActualDelimeter, ExportQualifier, QualifyEveryField, RemoveQualInVal, IncludeHeaders, "MAX LEN", SizeLimit, SizeLimitType, IncludeHeaderInSplitFiles, SelectText, FromText, WhereText, GroupByText, OrderByText);
+
+                //ideas:
+
+                //add user input - combined file yes/no
+                //if combnine, then disable split
+                //if split, then disable combine
+                //if excel and combine, then enable combine to  single sheet or 1-file-per sheet
+
+                //add text field for combine filename
+
+                //if combine and delimeted - do we care about headers?
+                //if combine and fixed - do we allow this?
+                //if combine and excel and 1 sheet - do we care about headers? do we care about 1MM row limit?
+                //what to name tab? - Sheet?
+                //if combine and excel and multi sheet - how to name tab so it's always sub 32 if i <= 9 (left(table name, 28) + "(" + (i) + ")" //// if i >= 10 (left(table name, 27) + "(" + (i) + ")"
+
+
+                int FilesCreated = 0;
+                if (ConnectionInfo.Environ == "SQL SERVER")
+                {
+                    FilesCreated = Helpers.ExportTableFromSqlServerToFile(ConnectionInfo, TableName, ExportPath, Extension, ActualDelimeter, ExportQualifier, QualifyEveryField, RemoveQualInVal, IncludeHeaders, "MAX LEN", SizeLimit, SizeLimitType, IncludeHeaderInSplitFiles, SelectText, FromText, WhereText, GroupByText, OrderByText);
+                }
+                else if (ConnectionInfo.Environ == "SNOWFLAKE")
+                {
+                    FilesCreated = Helpers.ExportTableFromSnowflakeToFile(Snowflake, TableName, ExportPath, Extension, ActualDelimeter, ExportQualifier, QualifyEveryField, RemoveQualInVal, IncludeHeaders, "MAX LEN", SizeLimit, SizeLimitType, IncludeHeaderInSplitFiles, SelectText, FromText, WhereText, GroupByText, OrderByText);
+                }
+
                 FilesExported  += FilesCreated;
                 Console.WriteLine("");
             }
+            Snowflake.Close();
 
-            Console.WriteLine(TablesExported.ToString() + " tables exported from " + Server + "." + Database);
+            Console.WriteLine(TablesExported.ToString() + " tables exported from " + ConnectionInfo.Environ + "-" + ConnectionInfo.Server + "-" + ConnectionInfo.Database);
             Console.WriteLine(FilesExported.ToString() + " files created " + ExportPath);
             Console.WriteLine("");
         }
@@ -479,7 +560,9 @@ namespace SQL_SERVER_IMPORT_EXPORT
         {
             List<string> UserSelectedTables = new List<string>();
             Helpers Helpers = new Helpers();
+            ConnectionInfo ConnectionInfo = new ConnectionInfo();
 
+            string Environ = EnvironComboBox.Text;
             string Server = ServerComboBox.Text;
             string Database = DatabaseComboBox.Text;
             bool TableSearchMethodIsCommaList = CommaSeperatedListTableSearchRadioButton.Checked;
@@ -495,13 +578,13 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 //User types out comma-seperated list, which is checked against tables that exist in SQL
                 //Only the table names that match are returned
-                UserSelectedTables = Helpers.GetListofTablesFromSqlDb(Server, Database, TablesToExportCommaStrList);
+                UserSelectedTables = Helpers.GetListofTablesFromSqlServerDb(ConnectionInfo, TablesToExportCommaStrList);
             }
             else if (TableSearchMethodIsRegexPattern)
             {
                 //User types out a regex pattern, which is checked against tables that exist in SQL
                 //Only the table names that match are returned
-                UserSelectedTables = Helpers.GetListofTablesFromSqlDb(Server, Database, TablesToExportRegexText);
+                UserSelectedTables = Helpers.GetListofTablesFromSqlServerDb(ConnectionInfo, TablesToExportRegexText);
             }
             else if (TableSearchMethodIsTablePicker)
             {
@@ -518,19 +601,34 @@ namespace SQL_SERVER_IMPORT_EXPORT
         //------------------------------------------------------------------------------------
         private void LoadSqlTables_Click(object sender, EventArgs e)
         {
-            string Server = ServerComboBox.Text;
-            string Database = DatabaseComboBox.Text;
+            Console.WriteLine("Loading tables...");
+            ConnectionInfo ConnectionInfo = new ConnectionInfo();
             Helpers Helpers = new Helpers();
 
-            if (Server != "" && Database != "")
+            if (ConnectionInfo.Environ == "SQL SERVER" && ConnectionInfo.Server != "" && ConnectionInfo.Database != "")
             {
                 TablesToExportListFromSql.Items.Clear();
-                List<string> Tables = Helpers.GetListofTablesFromSqlDb(Server, Database, "", false);
+                List<string> Tables = Helpers.GetListofTablesFromSqlServerDb(ConnectionInfo, "", false);
                 for (int i = 0; i < Tables.Count; i++)
                 {
                     TablesToExportListFromSql.Items.Add(Tables[i]);
                 }
             }
+            else if (ConnectionInfo.Environ == "SNOWFLAKE" && ConnectionInfo.Database != "")
+            {
+                Snowflake Snowflake = new Snowflake();
+                Snowflake.ConnectToDb(ConnectionInfo);
+
+                TablesToExportListFromSql.Items.Clear();
+                List<string> Tables = Helpers.GetListofTablesFromSnowflakeDb(Snowflake, "", false);
+                for (int i = 0; i < Tables.Count; i++)
+                {
+                    TablesToExportListFromSql.Items.Add(Tables[i]);
+                }
+                Snowflake.Close();
+            }
+            
+            Console.WriteLine(TablesToExportListFromSql.Items.Count.ToString() + " tables loaded.");
         }
 
 
@@ -538,9 +636,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
         {
             Console.WriteLine("COLUMNS FOR SELECTED TABLES");
             Helpers Helpers = new Helpers();
-
-            string Server = ServerComboBox.Text;
-            string Database = DatabaseComboBox.Text;
+            ConnectionInfo ConnectionInfo = new ConnectionInfo();
 
             List<string> UserSelectedTables = GetListOfUserSelectedTables();
 
@@ -549,7 +645,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 string Table = UserSelectedTables[t];
                 //get columns
-                List<string> ColumnNames = Helpers.GetListOfColumnsForTable(Server, Database, Table);
+                List<string> ColumnNames = Helpers.GetListOfColumnsForTable(ConnectionInfo, Table);
 
                 Console.WriteLine(ColumnNames.Count + " columns");
 
@@ -643,7 +739,10 @@ namespace SQL_SERVER_IMPORT_EXPORT
             string ValueSelected = "";
             if (Value == "")
             {
-                ValueSelected = ExtensionListBoxImport.SelectedItem.ToString();
+                if (ExtensionListBoxImport.SelectedItem != null)
+                {
+                    ValueSelected = ExtensionListBoxImport.SelectedItem.ToString();
+                }
             }
             else
             {
@@ -1036,6 +1135,114 @@ namespace SQL_SERVER_IMPORT_EXPORT
             {
                 SplitAmounNumericUpDown.Enabled = true;
                 IncludeHeaderInSplitFilesCheckBox.Enabled = true;
+            }
+        }
+
+        private void EnvironComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            FormData FormData = new FormData();
+
+            if (EnvironComboBox.Text == "SQL SERVER")
+            {
+                ServerComboBox.Text = string.Empty;
+                ServerComboBox.Items.Clear();
+
+                DatabaseComboBox.Text = string.Empty;
+                DatabaseComboBox.Items.Clear();
+
+                AccountComboBox.Text = string.Empty;
+                AccountComboBox.Items.Clear();
+
+                SchemaComboBox.Text = string.Empty;
+                SchemaComboBox.Items.Clear();
+
+                UsernameComboBox.Text = string.Empty;
+                UsernameComboBox.Items.Clear();
+
+                PasswordComboBox.Text = string.Empty;
+                PasswordComboBox.Items.Clear();
+
+                FormData.SqlServerServers.ToList().ForEach(n => ServerComboBox.Items.Add(n));
+                FormData.SqlServerDatabases.ToList().ForEach(n => DatabaseComboBox.Items.Add(n));
+                ServerComboBox.Text = FormData.DefaultSqlServerServer;
+
+                ExtensionListBoxImport.ClearSelected();
+                ExtensionListBoxImport.Items.Clear();
+                FormData.SqlServerImportTypes.ToList().ForEach(n => ExtensionListBoxImport.Items.Add(n));
+                ExtensionListBoxImport.Text = "csv";
+
+                ImportDelimeterListBox.ClearSelected();
+                ImportDelimeterListBox.Items.Clear();
+                FormData.SqlServerImportDelims.ToList().ForEach(n => ImportDelimeterListBox.Items.Add(n));
+                ImportDelimeterListBox.Text = "COMMA";
+
+                DoubleQuoted.Enabled = true;
+                InsertToExistingTableCheckBox.Enabled = true;
+                ImportToSingleTableTextBox.Enabled = true;
+                FixedWidthColumnFilePathTextBox.Enabled = true;
+                ColumnTypeVarcharDefaultRadioButton.Enabled = true;
+                ColumnTypeUseFileRadioButton.Enabled = true;
+                ColumnTypeFilePathTextBox.Enabled = true;
+                FasterImportCheckBox.Enabled = true;
+                ListColumnsForSelectedTablesButton.Enabled = true;
+
+                ServerLabel.Font = new System.Drawing.Font(ServerLabel.Font, FontStyle.Bold);
+                AccountLabel.Font = new System.Drawing.Font(AccountLabel.Font, FontStyle.Regular);
+                UsernameLabel.Font = new System.Drawing.Font(UsernameLabel.Font, FontStyle.Regular);
+                PasswordLabel.Font = new System.Drawing.Font(PasswordLabel.Font, FontStyle.Regular);
+            }
+            else if (EnvironComboBox.Text == "SNOWFLAKE")
+            {
+                ServerComboBox.Text = string.Empty;
+                ServerComboBox.Items.Clear();
+
+                DatabaseComboBox.Text = string.Empty;
+                DatabaseComboBox.Items.Clear();
+
+                AccountComboBox.Text = string.Empty;
+                AccountComboBox.Items.Clear();
+
+                SchemaComboBox.Text = string.Empty;
+                SchemaComboBox.Items.Clear();
+
+                UsernameComboBox.Text = string.Empty;
+                UsernameComboBox.Items.Clear();
+
+                PasswordComboBox.Text = string.Empty;
+                PasswordComboBox.Items.Clear();
+
+                ExtensionListBoxImport.ClearSelected();
+                ExtensionListBoxImport.Items.Clear();
+                FormData.SnowflakeImportTypes.ToList().ForEach(n => ExtensionListBoxImport.Items.Add(n));
+                ExtensionListBoxImport.Text = "csv";
+
+                ImportDelimeterListBox.ClearSelected();
+                ImportDelimeterListBox.Items.Clear();
+                FormData.SnowflakeImportDelims.ToList().ForEach(n => ImportDelimeterListBox.Items.Add(n));
+                ImportDelimeterListBox.Text = "COMMA";
+
+                FormData.SnowflakeDatabases.ToList().ForEach(n => DatabaseComboBox.Items.Add(n));
+                FormData.SnowflakeAccounts.ToList().ForEach(n => AccountComboBox.Items.Add(n));
+                FormData.SnowflakeUsernames.ToList().ForEach(n => UsernameComboBox.Items.Add(n));
+                //FormData.SnowflakeSchemas.ToList().ForEach(n => SchemaComboBox.Items.Add(n));
+                DatabaseComboBox.Text = FormData.DefaultSnowflakeDatabase;
+                AccountComboBox.Text = FormData.DefaultSnowflakeAccount;
+                //SchemaComboBox.Text = FormData.DefaultSnowflakeSchema;
+
+                DoubleQuoted.Enabled = false;
+                InsertToExistingTableCheckBox.Enabled = false;
+                ImportToSingleTableTextBox.Enabled = false;
+                FixedWidthColumnFilePathTextBox.Enabled = false;
+                ColumnTypeVarcharDefaultRadioButton.Enabled = false;
+                ColumnTypeUseFileRadioButton.Enabled = false;
+                ColumnTypeFilePathTextBox.Enabled = false;
+                FasterImportCheckBox.Enabled = false;
+                ListColumnsForSelectedTablesButton.Enabled = false;
+
+                ServerLabel.Font = new System.Drawing.Font(ServerLabel.Font, FontStyle.Regular);
+                AccountLabel.Font = new System.Drawing.Font(AccountLabel.Font, FontStyle.Bold);
+                UsernameLabel.Font = new System.Drawing.Font(UsernameLabel.Font, FontStyle.Bold);
+                PasswordLabel.Font = new System.Drawing.Font(PasswordLabel.Font, FontStyle.Bold);
             }
         }
     }
