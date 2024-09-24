@@ -292,7 +292,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
 
                 foreach (DataColumn Column in DataTable.Columns)
                 {
-                    ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + "[" + Column.ColumnName + "] ";
+                    ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + "\"" + Column.ColumnName + "\" ";
 
                     if (Delimeter == "FIXED WIDTH" && ColumnTypeMethod == "DEFAULT VARCHAR")
                     {
@@ -312,9 +312,11 @@ namespace SQL_SERVER_IMPORT_EXPORT
                     }
                 }
                 ColumnsForTableCreationQuery = ColumnsForTableCreationQuery.Substring(0, ColumnsForTableCreationQuery.Length - 1);
-                ColumnsForTableCreationQuery = ColumnsForTableCreationQuery + ";";
 
                 string TableCreationQuery = "CREATE OR REPLACE TABLE \"" + TableName + "\"  AS (  " + ColumnsForTableCreationQuery + ")";
+                TableCreationQuery = TableCreationQuery + ";";
+                Console.WriteLine(TableCreationQuery);
+                Console.ReadLine();
                 Snowflake.Execute(TableCreationQuery);
                 if (ConsoleOutput)
                 {
