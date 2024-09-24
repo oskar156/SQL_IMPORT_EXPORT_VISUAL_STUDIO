@@ -85,10 +85,12 @@ namespace SQL_SERVER_IMPORT_EXPORT
         {
             string ColumnSelects = "";
 
+            int ColumnIndex = 1;
             foreach (DataColumn DataColumn in BaseDtTable.Columns)
             {
                 string ColName = DataColumn.ColumnName;
-                ColumnSelects += "\"" + ColName + "\" VARCHAR,"; //assums all columns will be VARCHAR
+                ColumnSelects += "$" + ColumnIndex.ToString() + "::VARCHAR AS \"" + ColName + "\" ,"; //assums all columns will be VARCHAR
+                ColumnIndex++;
             }
             ColumnSelects = ColumnSelects.Substring(0, ColumnSelects.Length - 1); //remove last comma
 
@@ -100,7 +102,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             FileFormatQuery += " skip_header=1; ";
             this.Execute(FileFormatQuery);
 
-            string CreateTableFromStagedFileQuery = " CREATE OR REPLACE FILE FORMAT " + TableName + " ";
+            string CreateTableFromStagedFileQuery = " CREATE OR REPLACE TABLE " + TableName + " AS ";
             CreateTableFromStagedFileQuery += " SELECT " + ColumnSelects + " ";
             CreateTableFromStagedFileQuery += " FROM @~/" + StageName + " ";
             CreateTableFromStagedFileQuery += " (file_format => " + FileFormatName + "); ";
