@@ -1,4 +1,4 @@
-﻿/* TABLE OF CONTENTS
+/* TABLE OF CONTENTS
  * 
  * FIELDS...
  * 
@@ -52,7 +52,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
         {
             //MinMax Threads are reduced to limit the issue of indefinite Duo MFA requests
             //setting min-max to 1-4 results in nothing
-            //setting min-max to 1-5 results in 2 MFA requests
+            //setting min-max to 1-5 results in 2-4 MFA requests on average - sometimes we get nothing and it times ou
             //ideally it would just be once, though
             int MinThreadsWorker;
             int MinThreadsCompletionPort;
@@ -76,8 +76,15 @@ namespace SQL_SERVER_IMPORT_EXPORT
             ThreadPool.SetMaxThreads(MaxThreadsWorker, MaxThreadsCompletionPort);
 
             //Set Database
-            string Query = "USE DATABASE " + ConnectionInfo.Database + ";";
-            this.Execute(Query);
+            string QueryDb = "USE DATABASE " + ConnectionInfo.Database + ";";
+            this.Execute(QueryDb);
+            
+            //Set SCHEMA
+            if(ConnectionInfo.Schema != "")
+            {
+                string QuerySchm = "USE SCHEMA " + ConnectionInfo.Schema + ";";
+                this.Execute(QuerySchm);
+            }
         }
         public void Execute(string Query)
         {
