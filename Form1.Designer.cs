@@ -1,4 +1,4 @@
-﻿namespace SQL_SERVER_IMPORT_EXPORT
+namespace SQL_SERVER_IMPORT_EXPORT
 {
     partial class Form1
     {
@@ -52,7 +52,10 @@
             this.ExportButton = new System.Windows.Forms.Button();
             this.ImportButton = new System.Windows.Forms.Button();
             this.ImportPanel = new System.Windows.Forms.Panel();
+            this.label34 = new System.Windows.Forms.Label();
+            this.ImportRegexFilterTextBox = new System.Windows.Forms.TextBox();
             this.DeleteConvertedExcelCsvsCheckBox = new System.Windows.Forms.CheckBox();
+            this.ColumnTypeFilePathTextBox = new System.Windows.Forms.TextBox();
             this.ConvertExcelToCsvCheckBox = new System.Windows.Forms.CheckBox();
             this.label38 = new System.Windows.Forms.Label();
             this.label37 = new System.Windows.Forms.Label();
@@ -63,7 +66,6 @@
             this.label42 = new System.Windows.Forms.Label();
             this.label35 = new System.Windows.Forms.Label();
             this.LimitFieldLengthUpDown = new System.Windows.Forms.NumericUpDown();
-            this.ColumnTypeFilePathTextBox = new System.Windows.Forms.TextBox();
             this.ImportEncodingListBox = new System.Windows.Forms.ListBox();
             this.label29 = new System.Windows.Forms.Label();
             this.label33 = new System.Windows.Forms.Label();
@@ -146,8 +148,6 @@
             this.UsernameLabel = new System.Windows.Forms.Label();
             this.AccountComboBox = new System.Windows.Forms.ComboBox();
             this.AccountLabel = new System.Windows.Forms.Label();
-            this.ImportRegexFilterTextBox = new System.Windows.Forms.TextBox();
-            this.label34 = new System.Windows.Forms.Label();
             this.ImportPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ExcelHeaderRowUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.LimitFieldLengthUpDown)).BeginInit();
@@ -449,6 +449,23 @@
             this.ImportPanel.Size = new System.Drawing.Size(386, 819);
             this.ImportPanel.TabIndex = 7;
             // 
+            // label34
+            // 
+            this.label34.AutoSize = true;
+            this.label34.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label34.Location = new System.Drawing.Point(9, 652);
+            this.label34.Name = "label34";
+            this.label34.Size = new System.Drawing.Size(126, 17);
+            this.label34.TabIndex = 1016;
+            this.label34.Text = "Import Regex Filter";
+            // 
+            // ImportRegexFilterTextBox
+            // 
+            this.ImportRegexFilterTextBox.Location = new System.Drawing.Point(141, 652);
+            this.ImportRegexFilterTextBox.Name = "ImportRegexFilterTextBox";
+            this.ImportRegexFilterTextBox.Size = new System.Drawing.Size(218, 20);
+            this.ImportRegexFilterTextBox.TabIndex = 1015;
+            // 
             // DeleteConvertedExcelCsvsCheckBox
             // 
             this.DeleteConvertedExcelCsvsCheckBox.AccessibleRole = System.Windows.Forms.AccessibleRole.None;
@@ -461,6 +478,13 @@
             this.DeleteConvertedExcelCsvsCheckBox.TabIndex = 1014;
             this.DeleteConvertedExcelCsvsCheckBox.Text = "Delete the converted CSVs";
             this.DeleteConvertedExcelCsvsCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // ColumnTypeFilePathTextBox
+            // 
+            this.ColumnTypeFilePathTextBox.Location = new System.Drawing.Point(4, 531);
+            this.ColumnTypeFilePathTextBox.Name = "ColumnTypeFilePathTextBox";
+            this.ColumnTypeFilePathTextBox.Size = new System.Drawing.Size(291, 20);
+            this.ColumnTypeFilePathTextBox.TabIndex = 10;
             // 
             // ConvertExcelToCsvCheckBox
             // 
@@ -588,13 +612,6 @@
             0,
             0,
             0});
-            // 
-            // ColumnTypeFilePathTextBox
-            // 
-            this.ColumnTypeFilePathTextBox.Location = new System.Drawing.Point(4, 531);
-            this.ColumnTypeFilePathTextBox.Name = "ColumnTypeFilePathTextBox";
-            this.ColumnTypeFilePathTextBox.Size = new System.Drawing.Size(291, 20);
-            this.ColumnTypeFilePathTextBox.TabIndex = 10;
             // 
             // ImportEncodingListBox
             // 
@@ -1394,7 +1411,6 @@
             // 
             // SchemaComboBox
             // 
-            this.SchemaComboBox.Enabled = false;
             this.SchemaComboBox.FormattingEnabled = true;
             this.SchemaComboBox.Items.AddRange(new object[] {
             "PUBLIC"});
@@ -1466,23 +1482,6 @@
             this.AccountLabel.Size = new System.Drawing.Size(83, 20);
             this.AccountLabel.TabIndex = 999;
             this.AccountLabel.Text = "Account: ^";
-            // 
-            // ImportRegexFilterTextBox
-            // 
-            this.ImportRegexFilterTextBox.Location = new System.Drawing.Point(141, 652);
-            this.ImportRegexFilterTextBox.Name = "ImportRegexFilterTextBox";
-            this.ImportRegexFilterTextBox.Size = new System.Drawing.Size(218, 20);
-            this.ImportRegexFilterTextBox.TabIndex = 1015;
-            // 
-            // label34
-            // 
-            this.label34.AutoSize = true;
-            this.label34.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label34.Location = new System.Drawing.Point(9, 652);
-            this.label34.Name = "label34";
-            this.label34.Size = new System.Drawing.Size(126, 17);
-            this.label34.TabIndex = 1016;
-            this.label34.Text = "Import Regex Filter";
             // 
             // Form1
             // 
