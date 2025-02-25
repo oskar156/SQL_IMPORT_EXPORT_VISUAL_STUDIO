@@ -1,4 +1,4 @@
-﻿/* TABLE OF CONTENTS
+/* TABLE OF CONTENTS
  * 
  * METHODS
  * main:
@@ -479,7 +479,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 }
                 else if (ConnectionInfo.Environ == "SNOWFLAKE")
                 {
-                    TablesFromSqlDb = Export.GetListofTablesFromSnowflakeDb(Snowflake, TablesToExportCommaStrList);
+                    TablesFromSqlDb = Export.GetListofTablesFromSnowflakeDb(Snowflake, ConnectionInfo, TablesToExportCommaStrList);
                 }
             }
             else if (TableSearchMethodIsRegexPattern)
@@ -492,7 +492,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 }
                 else if (ConnectionInfo.Environ == "SNOWFLAKE")
                 {
-                    TablesFromSqlDb = Export.GetListofTablesFromSnowflakeDb(Snowflake, TablesToExportRegexText);
+                    TablesFromSqlDb = Export.GetListofTablesFromSnowflakeDb(Snowflake, ConnectionInfo, TablesToExportRegexText);
                 }
             }
             else if (TableSearchMethodIsTablePicker)
@@ -843,7 +843,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 Snowflake.ConnectToDb(ConnectionInfo);
 
                 TablesToExportListFromSql.Items.Clear();
-                List<string> Tables = Export.GetListofTablesFromSnowflakeDb(Snowflake, "", false);
+                List<string> Tables = Export.GetListofTablesFromSnowflakeDb(Snowflake, ConnectionInfo, "", false);
                 for (int i = 0; i < Tables.Count; i++)
                 {
                     TablesToExportListFromSql.Items.Add(Tables[i]);
