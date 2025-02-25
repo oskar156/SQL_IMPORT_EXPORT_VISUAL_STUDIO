@@ -1,11 +1,11 @@
-﻿/* TABLE OF CONTENTS
+/* TABLE OF CONTENTS
  * 
  * METHODS
  * public List<string> GetListOfUserSelectedTables()
  * public List<string> GetListofTablesFromSqlServerDb(ConnectionInfo ConnectionInfo, List<string> ListOfTablesToSearchFor, bool ConsoleOutput = true)
  * public List<string> GetListofTablesFromSqlServerDb(ConnectionInfo ConnectionInfo, string RegexSearchPattern = "", bool ConsoleOutput = true)
- * public List<string> GetListofTablesFromSnowflakeDb(Snowflake Snowflake, List<string> ListOfTablesToSearchFor, bool ConsoleOutput = true)
- * public List<string> GetListofTablesFromSnowflakeDb(Snowflake Snowflake, string RegexSearchPattern = "", bool ConsoleOutput = true)
+ * public List<string> GetListofTablesFromSnowflakeDb(Snowflake Snowflake, ConnectionInfo ConnectionInfo, List<string> ListOfTablesToSearchFor, bool ConsoleOutput = true)
+ * public List<string> GetListofTablesFromSnowflakeDb(Snowflake Snowflake, ConnectionInfo ConnectionInfo, string RegexSearchPattern = "", bool ConsoleOutput = true)
  * public List<string> GetListOfColumnsForTable(ConnectionInfo ConnectionInfo, string TableName, bool ConsoleOutput = true)
  * public int ExportTableFromSqlServerToFile(ConnectionInfo ConnectionInfo, string TableToExport, string ExportPath, string Extension, string Delimeter, System.Text.Encoding Encoding, string Qualifier, bool QualifyEveryField, bool RemoveQualInVal, bool IncludeHeaders, string FixedWidthColumnLengthMethod, decimal SizeLimit, string SizeLimitType, bool IncludeHeaderInSplitFiles, string SelectText = "", string FromText = "", string WhereText = "", string GroupBy = "", string OrderBy = "", bool ConsoleOutput = true)
  * public int ExportTableFromSnowflakeToFile(Snowflake Snowflake, string TableToExport, string ExportPath, string Extension, string Delimeter, System.Text.Encoding Encoding, string Qualifier, bool QualifyEveryField, bool RemoveQualInVal, bool IncludeHeaders, string FixedWidthColumnLengthMethod, decimal SizeLimit, string SizeLimitType, bool IncludeHeaderInSplitFiles, string SelectText = "", string FromText = "", string WhereText = "", string GroupBy = "", string OrderBy = "", bool ConsoleOutput = true)
@@ -166,7 +166,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             }
             return Tables;
         }
-        public List<string> GetListofTablesFromSnowflakeDb(Snowflake Snowflake, List<string> ListOfTablesToSearchFor, bool ConsoleOutput = true)
+        public List<string> GetListofTablesFromSnowflakeDb(Snowflake Snowflake, ConnectionInfo ConnectionInfo, List<string> ListOfTablesToSearchFor, bool ConsoleOutput = true)
         {
             if (ConsoleOutput) { Console.WriteLine("Getting List of Tables from Snowflake"); }
 
@@ -178,7 +178,12 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 ListOfTablesToSearchFor[t] = ListOfTablesToSearchFor[t].ToUpper();
             }
 
-            string Query = "select table_name from information_schema.tables where table_type = 'BASE TABLE';";
+            string Query = "select table_name from information_schema.tables where table_type = 'BASE TABLE'";
+            if(ConnectionInfo.Schema != "")
+            {
+                Query += " AND TABLE_SCHEMA = '" + ConnectionInfo.Schema + "' ";
+            }
+            Query += ";";
             Snowflake.Execute(Query);
 
             int TableIndex = 0;
@@ -199,7 +204,7 @@ namespace SQL_SERVER_IMPORT_EXPORT
             if (ConsoleOutput) { Console.WriteLine(Tables.Count.ToString() + " tables found"); }
             return Tables;
         }
-        public List<string> GetListofTablesFromSnowflakeDb(Snowflake Snowflake, string RegexSearchPattern = "", bool ConsoleOutput = true)
+        public List<string> GetListofTablesFromSnowflakeDb(Snowflake Snowflake, ConnectionInfo ConnectionInfo, string RegexSearchPattern = "", bool ConsoleOutput = true)
         {
             if (ConsoleOutput) { Console.WriteLine("Getting Tables from Snowflake"); }
 
@@ -211,7 +216,12 @@ namespace SQL_SERVER_IMPORT_EXPORT
                 re = new Regex("(?i)" + RegexSearchPattern); //(?i) makes is case-insensitive
             }
 
-            string Query = "select table_name from information_schema.tables where table_type = 'BASE TABLE';";
+            string Query = "select table_name from information_schema.tables where table_type = 'BASE TABLE'";
+            if (ConnectionInfo.Schema != "")
+            {
+                Query += " AND TABLE_SCHEMA = '" + ConnectionInfo.Schema + "' ";
+            }
+            Query += ";";
             Snowflake.Execute(Query);
 
             int TableIndex = 0;
